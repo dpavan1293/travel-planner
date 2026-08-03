@@ -23,6 +23,18 @@ const EXTRA_TYPES = [
 ];
 const DEFAULT_EXTRA_META = { label: "Scheda", icon: FileText, color: "#7A7566" };
 
+// Icone SVG (stroke, 24x24) usate nel documento HTML esportato — non possiamo usare i componenti
+// lucide-react lì dentro perché è markup statico, quindi ne teniamo una versione disegnata a mano per tipo.
+const EXPORT_ICON_SVGS = {
+  flight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16l20-7-7 20-3-8-8-3z"/></svg>',
+  security: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  vaccines: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+  packing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
+  costs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>',
+  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="M8 12h8M8 16h5"/></svg>',
+};
+const EXPORT_ICON_DEFAULT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>';
+
 const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const WEEKDAYS = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
 const WEEKDAYS_SHORT = ["lun","mar","mer","gio","ven","sab","dom"];
@@ -71,6 +83,7 @@ const SHARED_STYLES = `
     --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
     --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
     --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Inter", monospace;
+    --font-page-title: "Canela", Georgia, serif;
     font-family: var(--font-text);
     color: var(--ink);
     min-height: 100vh;
@@ -110,7 +123,7 @@ const SHARED_STYLES = `
   .export-btn:hover { filter: brightness(1.08); }
   .export-btn:disabled { opacity: .5; cursor: default; }
   .tp-title-input {
-    font-family: var(--font-display); font-size: 34px; font-weight: 650; color: var(--ink);
+    font-family: var(--font-page-title); font-size: 34px; font-weight: 350; color: var(--ink);
     border: none; background: transparent; padding: 2px 0; width: 100%; outline: none;
     border-bottom: 1px solid transparent;
   }
@@ -291,16 +304,19 @@ const SHARED_STYLES = `
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
 
-  .launcher-title { font-family: var(--font-display); font-size: 30px; font-weight: 650; margin: 0 0 6px; }
+  .launcher-shell { max-width: 440px; margin: 60px auto 0; text-align: center; }
+  .launcher-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .launcher-title { font-family: var(--font-page-title); font-size: 30px; font-weight: 350; margin: 0 0 6px; }
   .launcher-sub { font-size: 14px; color: var(--muted); margin: 0 0 26px; }
   .create-card {
     background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border: 1.5px dashed var(--glass-border); border-radius: 20px; padding: 22px; margin-bottom: 20px;
+    border: 1.5px dashed var(--glass-border); border-radius: 20px; padding: 26px; margin-bottom: 24px; text-align: center;
   }
-  .create-card .field-label { margin-bottom: 8px; }
-  .create-row { display: flex; gap: 10px; }
-  .create-row .tp-input { flex: 1; font-size: 16px; padding: 11px 13px; }
-  .trip-list { display: flex; flex-direction: column; gap: 10px; }
+  .create-card .field-label { margin-bottom: 10px; text-align: center; }
+  .create-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .create-stack .tp-input { width: 100%; font-size: 16px; padding: 11px 13px; text-align: center; }
+  .create-stack .export-btn { padding: 10px 28px; }
+  .trip-list { display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .trip-card {
     position: relative; display: flex; align-items: center; gap: 14px;
     background: rgba(255,255,255,0.4); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
@@ -316,9 +332,10 @@ const SHARED_STYLES = `
   .trip-card-meta { font-size: 12.5px; color: var(--muted); margin: 0; font-family: var(--font-mono); }
   .trip-delete { margin-left: auto; }
   .new-trip-btn {
-    display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; border: 1px dashed var(--glass-border);
+    display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; max-width: 260px; margin-left: auto; margin-right: auto;
+    border: 1px dashed var(--glass-border);
     background: rgba(255,255,255,0.25); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    color: var(--muted); font-size: 13.5px; padding: 12px; border-radius: 16px; cursor: pointer; margin-bottom: 14px;
+    color: var(--muted); font-size: 13.5px; padding: 12px; border-radius: 16px; cursor: pointer; margin-bottom: 24px;
   }
   .new-trip-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
 
@@ -344,6 +361,7 @@ const SHARED_STYLES = `
     .create-card { padding: 16px; }
     .trip-list { gap: 8px; }
     .trip-card { padding: 11px 13px; gap: 11px; }
+    .launcher-shell { margin-top: 24px; }
     .launcher-title { font-size: 24px; }
     .launcher-sub { margin-bottom: 18px; }
   }
@@ -361,7 +379,7 @@ const SHARED_STYLES = `
   }
 `;
 
-export default function TravelPlanner() {
+export default function TravelPlanner({ user, onLogout }) {
   const [view, setView] = useState("loading");
   const [trips, setTrips] = useState([]);
   const [currentTripId, setCurrentTripId] = useState(null);
@@ -444,7 +462,7 @@ export default function TravelPlanner() {
       <div className="tp-wrap">
         {view === "loading" && <p className="empty-hint">Caricamento...</p>}
         {view === "launcher" && (
-          <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} />
+          <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} user={user} onLogout={onLogout} />
         )}
         {view === "planner" && currentTripId && (
           <PlannerView
@@ -459,7 +477,7 @@ export default function TravelPlanner() {
   );
 }
 
-function TripLauncher({ trips, onCreate, onOpen, onDelete }) {
+function TripLauncher({ trips, onCreate, onOpen, onDelete, user, onLogout }) {
   const [showForm, setShowForm] = useState(trips.length === 0);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
@@ -476,8 +494,15 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete }) {
   };
 
   return (
-    <>
-      <p className="tp-eyebrow" style={{ marginBottom: 10 }}>Travel planner</p>
+    <div className="launcher-shell">
+      <div className="launcher-top">
+        <p className="tp-eyebrow" style={{ margin: 0 }}>Travel planner</p>
+        {user && (
+          <button className="back-link" onClick={onLogout}>
+            {user.email || "Account"} · Esci
+          </button>
+        )}
+      </div>
       <h1 className="launcher-title">I tuoi viaggi</h1>
       <p className="launcher-sub">
         {trips.length === 0 ? "Dai un nome al tuo primo viaggio per iniziare." : "Scegli un viaggio da continuare a pianificare o creane uno nuovo."}
@@ -486,7 +511,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete }) {
       {showForm ? (
         <div className="create-card">
           <p className="field-label">Nome del viaggio</p>
-          <div className="create-row">
+          <div className="create-stack">
             <input
               ref={inputRef}
               className="tp-input"
@@ -497,7 +522,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete }) {
             />
             <button className="export-btn" onClick={submit}>Crea viaggio</button>
             {trips.length > 0 && (
-              <button className="icon-btn" onClick={() => setShowForm(false)} aria-label="Annulla"><X size={18} /></button>
+              <button className="cover-toggle-link" onClick={() => setShowForm(false)}>Annulla</button>
             )}
           </div>
         </div>
@@ -527,7 +552,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete }) {
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -721,17 +746,48 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         </div>`;
     }).join("");
 
+    const categoryCounts = {};
+    sortedDayEntries.forEach(([, entry]) => {
+      (entry.categories || []).forEach((cid) => {
+        categoryCounts[cid] = (categoryCounts[cid] || 0) + 1;
+      });
+    });
+    const totalCategoryTags = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
+    const categoryBreakdown = Object.entries(categoryCounts)
+      .map(([cid, count]) => {
+        const cat = allCategories.find((c) => c.id === cid);
+        if (!cat) return null;
+        return { label: cat.label, color: cat.color, pct: Math.round((count / totalCategoryTags) * 100) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.pct - a.pct);
+
+    const categoryBreakdownBlock = categoryBreakdown.length
+      ? `
+    <p class="section-label">Stile del viaggio</p>
+    <div class="cat-breakdown">
+      <div class="cat-bar">${categoryBreakdown.map((c) => `<span style="width:${c.pct}%;background:${c.color}" title="${escapeHtml(c.label)} ${c.pct}%"></span>`).join("")}</div>
+      <div class="cat-legend">${categoryBreakdown.map((c) => `<span class="cat-legend-item"><span class="dot" style="background:${c.color}"></span>${escapeHtml(c.label)} — ${c.pct}%</span>`).join("")}</div>
+    </div>`
+      : "";
+
     const infoCards = extras.map((extra) => {
       const meta = EXTRA_TYPES.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
+      const iconSvg = EXPORT_ICON_SVGS[extra.type] || EXPORT_ICON_DEFAULT;
       const isPacking = extra.type === "packing";
       const isCosts = extra.type === "costs";
       const isFlight = extra.type === "flight";
+      const cardHead = `
+        <div class="info-card-head">
+          <span class="info-icon" style="background:${meta.color}1F;color:${meta.color}">${iconSvg}</span>
+          <p class="info-card-title" style="color:${meta.color}">${escapeHtml(extra.title)}</p>
+        </div>`;
 
       if (isFlight) {
         const flights = (extra.flights || []).filter((f) => f.number || f.airline || f.depCity || f.arrCity);
         return `
-          <div class="info-card">
-            <p class="info-card-title" style="color:${meta.color}"><span class="dot" style="background:${meta.color}"></span>${escapeHtml(extra.title)}</p>
+          <div class="info-card" style="border-left-color:${meta.color}">
+            ${cardHead}
             ${flights.length ? flights.map((f) => `
               <div class="flight-row">
                 <p class="flight-meta">${[escapeHtml(f.number), escapeHtml(f.airline)].filter(Boolean).join(" · ") || "Volo"}</p>
@@ -749,8 +805,8 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         const total = rows.reduce((sum, l) => sum + (parseFloat(String(l.value).replace(",", ".")) || 0), 0);
         const fmt = (n) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
         return `
-          <div class="info-card cost-card">
-            <p class="info-card-title" style="color:${meta.color}"><span class="dot" style="background:${meta.color}"></span>${escapeHtml(extra.title)}</p>
+          <div class="info-card cost-card" style="border-left-color:${meta.color}">
+            ${cardHead}
             ${rows.length ? `<table class="cost-table">${rows.map((l) => `<tr><td>${escapeHtml(l.desc)}</td><td class="val">${fmt(parseFloat(String(l.value).replace(",", ".")) || 0)}</td></tr>`).join("")}</table>` : `<p class="muted">Nessuna voce</p>`}
             <div class="cost-total"><span>Totale</span><span>${fmt(total)}</span></div>
           </div>`;
@@ -758,8 +814,8 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
       const lines = extra.lines.filter((l) => l.text.trim());
       return `
-        <div class="info-card">
-          <p class="info-card-title" style="color:${meta.color}"><span class="dot" style="background:${meta.color}"></span>${escapeHtml(extra.title)}</p>
+        <div class="info-card" style="border-left-color:${meta.color}">
+          ${cardHead}
           ${lines.length ? `<ul class="acts">${lines.map((l) => `<li>${isPacking ? (l.done ? "☑ " : "☐ ") : ""}${escapeHtml(l.text)}</li>`).join("")}</ul>` : `<p class="muted">Nessuna voce</p>`}
         </div>`;
     }).join("");
@@ -809,19 +865,30 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   .acts li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
   .stay { display: inline-flex; align-items: center; margin-top: 10px; padding: 7px 13px; background: rgba(31,58,77,0.06); border-radius: 10px; font-size: 13px; color: var(--ink); }
   .muted { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .info-card { border: 1px solid var(--rule); border-radius: 14px; padding: 18px 20px; background: #fff; break-inside: avoid; }
-  .info-card-title { font-family: 'Fraunces', serif; font-size: 15.5px; font-weight: 600; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
-  .info-card-title .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cat-breakdown { margin-bottom: 40px; }
+  .cat-bar { display: flex; width: 100%; height: 12px; border-radius: 8px; overflow: hidden; background: var(--rule); margin-bottom: 12px; }
+  .cat-bar span { height: 100%; }
+  .cat-legend { display: flex; flex-wrap: wrap; gap: 14px; }
+  .cat-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink); }
+  .cat-legend-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .info-stack { display: flex; flex-direction: column; gap: 18px; }
+  .info-card {
+    border: 1px solid var(--rule); border-left: 4px solid var(--rule); border-radius: 14px; padding: 22px 26px;
+    background: #fff; break-inside: avoid;
+  }
+  .info-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .info-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .info-icon svg { width: 20px; height: 20px; }
+  .info-card-title { font-family: 'Fraunces', serif; font-size: 16.5px; font-weight: 600; margin: 0; }
   .cost-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  .cost-table td { padding: 5px 0; border-bottom: 1px solid #F1EFE6; }
+  .cost-table td { padding: 6px 0; border-bottom: 1px solid #F1EFE6; }
   .cost-table td.val { text-align: right; white-space: nowrap; padding-left: 12px; }
-  .flight-row { padding: 8px 0; border-bottom: 1px solid #F1EFE6; }
+  .flight-row { padding: 10px 0; border-bottom: 1px solid #F1EFE6; }
   .flight-row:last-child { border-bottom: none; }
-  .flight-meta { font-size: 11.5px; color: var(--muted); margin: 0 0 3px; text-transform: uppercase; letter-spacing: .04em; }
-  .flight-route-row { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .flight-meta { font-size: 11.5px; color: var(--muted); margin: 0 0 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .flight-route-row { font-size: 14.5px; display: flex; align-items: center; gap: 10px; }
   .flight-route-row .arrow { color: var(--muted); }
-  .cost-total { display: flex; justify-content: space-between; margin-top: 10px; padding: 9px 12px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
+  .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
   footer { border-top: 1px solid var(--rule); margin-top: 50px; padding-top: 18px; text-align: center; }
   footer p { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
   @media (max-width: 620px) {
@@ -831,7 +898,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     .tl-content.has-image, .tl-content.has-image.img-left { flex-direction: column; }
     .tl-image { width: 100%; }
     .tl-image img { height: 170px; }
-    .info-grid { grid-template-columns: 1fr; }
+    .info-card { padding: 18px 20px; }
   }
   @media print {
     .cover { break-after: avoid; }
@@ -848,11 +915,12 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     </div>
   </div>
   <div class="wrap">
+    ${categoryBreakdownBlock}
     <p class="section-label">Programma</p>
     <div class="timeline">
       ${dayBlocks || '<p class="muted">Nessuna giornata pianificata.</p>'}
     </div>
-    ${extras.length ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-grid">${infoCards}</div>` : ""}
+    ${extras.length ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-stack">${infoCards}</div>` : ""}
     <footer><p>${escapeHtml(tripTitle || "Itinerario")} — documento di viaggio</p></footer>
   </div>
 </body>
@@ -998,7 +1066,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                 <div key={iso} className="ticket" onClick={() => setSelectedDate(iso)}>
                   <div className="date-badge" style={{ borderColor: stubColor ? `${stubColor}55` : "var(--glass-border)", background: stubColor ? `${stubColor}1F` : "rgba(255,255,255,0.5)" }}>
                     <span className="wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
-                    <span className="dnum" style={{ color: stubColor || "var(--ink)" }}>{d.getDate()}</span>
+                    <span className="dnum">{d.getDate()}</span>
                     <span className="mo">{MONTHS[d.getMonth()].slice(0, 3)}</span>
                   </div>
                   <div className="ticket-body">
