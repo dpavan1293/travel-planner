@@ -10,15 +10,14 @@
 // Richiede l'header Authorization: Bearer <token Netlify Identity>, popolato
 // automaticamente da Netlify quando la richiesta arriva da un utente loggato
 // (vedi src/storage.js sul frontend).
+//
+// Usa @netlify/neon (client HTTP su Neon/Postgres) invece del driver "pg" classico:
+// quest'ultimo apre connessioni TCP dirette che spesso non funzionano bene nell'ambiente
+// serverless di Netlify e causano crash (502) all'avvio della funzione.
 
-const { Client } = require("pg");
-const { getConnectionString } = require("@netlify/database");
+const { neon } = require("@netlify/neon");
 
-async function getClient() {
-  const client = new Client({ connectionString: getConnectionString() });
-  await client.connect();
-  return client;
-}
+const sql = neon();
 
 function json(statusCode, body) {
   return {
@@ -35,29 +34,28 @@ exports.handler = async (event, context) => {
   }
   const userId = user.sub;
 
-  let client;
   try {
-    client = await getClient();
-
     if (event.httpMethod === "GET") {
       const params = event.queryStringParameters || {};
 
       if (params.list) {
         const prefix = params.prefix || "";
-        const { rows } = await client.query(
-          "SELECT key FROM kv_store WHERE user_id = $1 AND key LIKE $2 ORDER BY key",
-          [userId, `${prefix}%`]
-        );
+        const rows = await sql`
+          SELECT key FROM kv_store
+          WHERE user_id = ${userId} AND key LIKE ${prefix + "%"}
+          ORDER BY key
+        `;
         return json(200, { keys: rows.map((r) => r.key), prefix, shared: false });
       }
 
       const key = params.key;
       if (!key) return json(400, { error: "Parametro 'key' mancante" });
 
-      const { rows } = await client.query(
-        "SELECT value FROM kv_store WHERE user_id = $1 AND key = $2 LIMIT 1",
-        [userId, key]
-      );
+      const rows = await sql`
+        SELECT value FROM kv_store
+        WHERE user_id = ${userId} AND key = ${key}
+        LIMIT 1
+      `;
       if (!rows.length) return json(404, { error: "Chiave non trovata" });
       return json(200, { key, value: rows[0].value, shared: false });
     }
@@ -67,12 +65,11 @@ exports.handler = async (event, context) => {
       const { key, value } = body;
       if (!key) return json(400, { error: "Campo 'key' mancante" });
 
-      await client.query(
-        `INSERT INTO kv_store (user_id, key, value, updated_at)
-         VALUES ($1, $2, $3, now())
-         ON CONFLICT (user_id, key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-        [userId, key, value]
-      );
+      await sql`
+        INSERT INTO kv_store (user_id, key, value, updated_at)
+        VALUES (${userId}, ${key}, ${value}, now())
+        ON CONFLICT (user_id, key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+      `;
       return json(200, { key, value, shared: false });
     }
 
@@ -81,14 +78,12 @@ exports.handler = async (event, context) => {
       const key = params.key;
       if (!key) return json(400, { error: "Parametro 'key' mancante" });
 
-      await client.query("DELETE FROM kv_store WHERE user_id = $1 AND key = $2", [userId, key]);
+      await sql`DELETE FROM kv_store WHERE user_id = ${userId} AND key = ${key}`;
       return json(200, { key, deleted: true, shared: false });
     }
 
     return json(405, { error: "Metodo non supportato" });
   } catch (err) {
     return json(500, { error: err.message });
-  } finally {
-    if (client) await client.end();
   }
 };

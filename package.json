@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@netlify/database": "^1.1.0",
+    "@netlify/neon": "^0.1.2",
     "lucide-react": "^1.28.0",
     "netlify-identity-widget": "^2.0.3",
-    "pg": "^8.22.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
