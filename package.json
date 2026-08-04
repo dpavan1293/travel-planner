@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@netlify/database": "^1.1.0",
     "@netlify/neon": "^0.1.2",
     "lucide-react": "^1.28.0",
     "netlify-identity-widget": "^2.0.3",
