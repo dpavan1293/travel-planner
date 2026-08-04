@@ -17,8 +17,6 @@
 
 const { neon } = require("@netlify/neon");
 
-const sql = neon();
-
 function json(statusCode, body) {
   return {
     statusCode,
@@ -28,6 +26,16 @@ function json(statusCode, body) {
 }
 
 exports.handler = async (event, context) => {
+  // Inizializzazione del client dentro l'handler (non a livello di modulo):
+  // se il database non è collegato al sito, questo genera un errore leggibile
+  // (500 con messaggio) invece di far crashare l'intera funzione (502 muto).
+  let sql;
+  try {
+    sql = neon();
+  } catch (err) {
+    return json(500, { error: `Database non collegato al sito: ${err.message}` });
+  }
+
   const user = context.clientContext && context.clientContext.user;
   if (!user) {
     return json(401, { error: "Non autenticato" });
