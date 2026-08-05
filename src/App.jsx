@@ -11,8 +11,6 @@ const CATEGORIES = [
   { id: "avventura", label: "Avventura", color: "#C1503C" },
 ];
 
-const CUSTOM_CATEGORY_PALETTE = ["#7C6FDB", "#D46FB3", "#4FA8D8", "#5FA678", "#D9A441", "#3D7A8A"];
-
 const EXTRA_TYPES = [
   { id: "flight", label: "Volo", icon: Plane, color: "#2E6F8E" },
   { id: "security", label: "Sicurezza", icon: ShieldCheck, color: "#C1503C" },
@@ -34,6 +32,16 @@ const EXPORT_ICON_SVGS = {
   notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="M8 12h8M8 16h5"/></svg>',
 };
 const EXPORT_ICON_DEFAULT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>';
+
+// Icone dedicate per le categorie di viaggio, usate nell'infografica "Stile del viaggio" dell'export.
+const CATEGORY_ICON_SVGS = {
+  citta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-4h6v4"/><path d="M9 7h.01M9 11h.01M15 7h.01M15 11h.01"/></svg>',
+  mare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0 3 1.5 4.5 0"/><path d="M2 15c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0 3 1.5 4.5 0"/></svg>',
+  montagna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-12 4 7 3-4 5 9z"/></svg>',
+  relax: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>',
+  trasferimento: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a4 4 0 0 0 4-4 4 4 0 0 0-4-4H9a4 4 0 0 1-4-4 4 4 0 0 1 4-4h7"/></svg>',
+  avventura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></svg>',
+};
 
 const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const WEEKDAYS = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -198,10 +206,6 @@ const SHARED_STYLES = `
   }
   .cat-chip .dot { width: 7px; height: 7px; border-radius: 50%; }
   .cat-chip.active { border-color: currentColor; font-weight: 500; background: rgba(255,255,255,0.6); }
-  .cat-chip.new-cat { border-style: dashed; color: var(--muted); }
-  .cat-chip.new-cat:hover { border-color: var(--accent); color: var(--accent-dark); }
-  .new-cat-form { display: flex; gap: 6px; margin-bottom: 16px; }
-  .new-cat-form .tp-input { flex: 1; padding: 7px 11px; font-size: 12.5px; }
   .ticket-body .cat-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 5px; }
   .ticket-body .cat-tag {
     font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; padding: 2px 8px;
@@ -304,10 +308,11 @@ const SHARED_STYLES = `
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
 
-  .launcher-shell { max-width: 440px; margin: 60px auto 0; text-align: center; }
-  .launcher-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .launcher-title { font-family: var(--font-page-title); font-size: 30px; font-weight: 350; margin: 0 0 6px; }
+  .launcher-shell { max-width: 440px; margin: 84px auto 0; text-align: center; }
+  .launcher-title { font-family: var(--font-page-title); font-size: 36px; font-weight: 350; margin: 0 0 8px; }
   .launcher-sub { font-size: 14px; color: var(--muted); margin: 0 0 26px; }
+  .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
+  .launcher-footer .back-link { margin: 0 auto; }
   .create-card {
     background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border: 1.5px dashed var(--glass-border); border-radius: 20px; padding: 26px; margin-bottom: 24px; text-align: center;
@@ -361,8 +366,8 @@ const SHARED_STYLES = `
     .create-card { padding: 16px; }
     .trip-list { gap: 8px; }
     .trip-card { padding: 11px 13px; gap: 11px; }
-    .launcher-shell { margin-top: 24px; }
-    .launcher-title { font-size: 24px; }
+    .launcher-shell { margin-top: 40px; }
+    .launcher-title { font-size: 30px; }
     .launcher-sub { margin-bottom: 18px; }
   }
 
@@ -495,14 +500,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, user, onLogout }) {
 
   return (
     <div className="launcher-shell">
-      <div className="launcher-top">
-        <p className="tp-eyebrow" style={{ margin: 0 }}>Travel planner</p>
-        {user && (
-          <button className="back-link" onClick={onLogout}>
-            {user.email || "Account"} · Esci
-          </button>
-        )}
-      </div>
+      <p className="tp-eyebrow" style={{ marginBottom: 10 }}>Travel planner</p>
       <h1 className="launcher-title">I tuoi viaggi</h1>
       <p className="launcher-sub">
         {trips.length === 0 ? "Dai un nome al tuo primo viaggio per iniziare." : "Scegli un viaggio da continuare a pianificare o creane uno nuovo."}
@@ -544,12 +542,20 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, user, onLogout }) {
               <button
                 className="icon-btn trip-delete"
                 aria-label="Elimina viaggio"
-                onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
+                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminare il viaggio "${t.title}"? L'azione non è reversibile.`)) onDelete(t.id); }}
               >
                 <Trash2 size={15} />
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {user && (
+        <div className="launcher-footer">
+          <button className="back-link" onClick={onLogout}>
+            {user.email || "Account"} · Esci
+          </button>
         </div>
       )}
     </div>
@@ -560,7 +566,6 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const [tripTitle, setTripTitle] = useState("");
   const [days, setDays] = useState({});
   const [extras, setExtras] = useState([]);
-  const [customCategories, setCustomCategories] = useState([]);
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [showCoverInput, setShowCoverInput] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1); });
@@ -578,7 +583,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const [rangeEnd, setRangeEnd] = useState("");
   const [loaded, setLoaded] = useState(false);
 
-  const allCategories = [...CATEGORIES, ...customCategories];
+  const allCategories = CATEGORIES;
 
   useEffect(() => {
     (async () => {
@@ -587,7 +592,6 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         if (res && res.value) {
           const data = JSON.parse(res.value);
           if (data.tripTitle) setTripTitle(data.tripTitle);
-          if (data.customCategories) setCustomCategories(data.customCategories);
           if (data.coverImageUrl) { setCoverImageUrl(data.coverImageUrl); setShowCoverInput(true); }
           if (data.days) {
             const migrated = {};
@@ -625,12 +629,12 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
   useEffect(() => {
     if (!loaded) return;
-    const payload = JSON.stringify({ tripTitle, days, extras, customCategories, coverImageUrl });
+    const payload = JSON.stringify({ tripTitle, days, extras, coverImageUrl });
     const t = setTimeout(() => {
       storage.set(`trip:${tripId}`, payload).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
-  }, [tripTitle, days, extras, customCategories, coverImageUrl, loaded, tripId]);
+  }, [tripTitle, days, extras, coverImageUrl, loaded, tripId]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -672,15 +676,6 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     setShowRangeForm(false);
     setRangeStart("");
     setRangeEnd("");
-  };
-
-  const addCustomCategory = (name) => {
-    const label = name.trim();
-    if (!label) return null;
-    const color = CUSTOM_CATEGORY_PALETTE[customCategories.length % CUSTOM_CATEGORY_PALETTE.length];
-    const cat = { id: uid(), label, color };
-    setCustomCategories((prev) => [...prev, cat]);
-    return cat.id;
   };
 
   const addExtra = (type) => {
@@ -757,7 +752,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       .map(([cid, count]) => {
         const cat = allCategories.find((c) => c.id === cid);
         if (!cat) return null;
-        return { label: cat.label, color: cat.color, pct: Math.round((count / totalCategoryTags) * 100) };
+        return { id: cid, label: cat.label, color: cat.color, pct: Math.round((count / totalCategoryTags) * 100) };
       })
       .filter(Boolean)
       .sort((a, b) => b.pct - a.pct);
@@ -766,8 +761,13 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       ? `
     <p class="section-label">Stile del viaggio</p>
     <div class="cat-breakdown">
-      <div class="cat-bar">${categoryBreakdown.map((c) => `<span style="width:${c.pct}%;background:${c.color}" title="${escapeHtml(c.label)} ${c.pct}%"></span>`).join("")}</div>
-      <div class="cat-legend">${categoryBreakdown.map((c) => `<span class="cat-legend-item"><span class="dot" style="background:${c.color}"></span>${escapeHtml(c.label)} — ${c.pct}%</span>`).join("")}</div>
+      ${categoryBreakdown.map((c) => `
+        <div class="cat-row-item">
+          <span class="cat-row-icon" style="color:${c.color}">${CATEGORY_ICON_SVGS[c.id] || EXPORT_ICON_DEFAULT}</span>
+          <span class="cat-row-label">${escapeHtml(c.label)}</span>
+          <div class="cat-row-bar"><span style="width:${c.pct}%;background:${c.color}"></span></div>
+          <span class="cat-row-pct">${c.pct}%</span>
+        </div>`).join("")}
     </div>`
       : "";
 
@@ -779,14 +779,14 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       const isFlight = extra.type === "flight";
       const cardHead = `
         <div class="info-card-head">
-          <span class="info-icon" style="background:${meta.color}1F;color:${meta.color}">${iconSvg}</span>
-          <p class="info-card-title" style="color:${meta.color}">${escapeHtml(extra.title)}</p>
+          <span class="info-icon" style="color:${meta.color}">${iconSvg}</span>
+          <p class="info-card-title">${escapeHtml(extra.title)}</p>
         </div>`;
 
       if (isFlight) {
         const flights = (extra.flights || []).filter((f) => f.number || f.airline || f.depCity || f.arrCity);
         return `
-          <div class="info-card" style="border-left-color:${meta.color}">
+          <div class="info-card flight-card">
             ${cardHead}
             ${flights.length ? flights.map((f) => `
               <div class="flight-row">
@@ -805,7 +805,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         const total = rows.reduce((sum, l) => sum + (parseFloat(String(l.value).replace(",", ".")) || 0), 0);
         const fmt = (n) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
         return `
-          <div class="info-card cost-card" style="border-left-color:${meta.color}">
+          <div class="info-card cost-card">
             ${cardHead}
             ${rows.length ? `<table class="cost-table">${rows.map((l) => `<tr><td>${escapeHtml(l.desc)}</td><td class="val">${fmt(parseFloat(String(l.value).replace(",", ".")) || 0)}</td></tr>`).join("")}</table>` : `<p class="muted">Nessuna voce</p>`}
             <div class="cost-total"><span>Totale</span><span>${fmt(total)}</span></div>
@@ -814,7 +814,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
       const lines = extra.lines.filter((l) => l.text.trim());
       return `
-        <div class="info-card" style="border-left-color:${meta.color}">
+        <div class="info-card">
           ${cardHead}
           ${lines.length ? `<ul class="acts">${lines.map((l) => `<li>${isPacking ? (l.done ? "☑ " : "☐ ") : ""}${escapeHtml(l.text)}</li>`).join("")}</ul>` : `<p class="muted">Nessuna voce</p>`}
         </div>`;
@@ -865,28 +865,31 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   .acts li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
   .stay { display: inline-flex; align-items: center; margin-top: 10px; padding: 7px 13px; background: rgba(31,58,77,0.06); border-radius: 10px; font-size: 13px; color: var(--ink); }
   .muted { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; }
-  .cat-breakdown { margin-bottom: 40px; }
-  .cat-bar { display: flex; width: 100%; height: 12px; border-radius: 8px; overflow: hidden; background: var(--rule); margin-bottom: 12px; }
-  .cat-bar span { height: 100%; }
-  .cat-legend { display: flex; flex-wrap: wrap; gap: 14px; }
-  .cat-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink); }
-  .cat-legend-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .info-stack { display: flex; flex-direction: column; gap: 18px; }
+  .cat-breakdown { margin-bottom: 44px; display: flex; flex-direction: column; gap: 16px; }
+  .cat-row-item { display: flex; align-items: center; gap: 14px; }
+  .cat-row-icon { width: 22px; height: 22px; flex-shrink: 0; }
+  .cat-row-icon svg { width: 100%; height: 100%; }
+  .cat-row-label { width: 120px; flex-shrink: 0; font-size: 13.5px; font-weight: 500; color: var(--ink); }
+  .cat-row-bar { flex: 1; height: 7px; border-radius: 6px; background: var(--rule); overflow: hidden; }
+  .cat-row-bar span { display: block; height: 100%; }
+  .cat-row-pct { width: 38px; flex-shrink: 0; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
+  .info-stack { display: flex; flex-direction: column; }
   .info-card {
-    border: 1px solid var(--rule); border-left: 4px solid var(--rule); border-radius: 14px; padding: 22px 26px;
-    background: #fff; break-inside: avoid;
+    padding: 28px 4px; border-bottom: 1px solid var(--rule); break-inside: avoid;
   }
-  .info-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-  .info-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .info-icon svg { width: 20px; height: 20px; }
-  .info-card-title { font-family: 'Fraunces', serif; font-size: 16.5px; font-weight: 600; margin: 0; }
+  .info-stack .info-card:last-child { border-bottom: none; }
+  .info-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .info-icon { width: 24px; height: 24px; flex-shrink: 0; }
+  .info-icon svg { width: 100%; height: 100%; }
+  .info-card-title { font-family: 'Fraunces', serif; font-size: 16.5px; font-weight: 600; margin: 0; color: var(--ink); }
   .cost-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .cost-table td { padding: 6px 0; border-bottom: 1px solid #F1EFE6; }
   .cost-table td.val { text-align: right; white-space: nowrap; padding-left: 12px; }
-  .flight-row { padding: 10px 0; border-bottom: 1px solid #F1EFE6; }
+  .flight-card .info-card-head { justify-content: center; }
+  .flight-row { padding: 14px 0; border-bottom: 1px solid #F1EFE6; text-align: center; }
   .flight-row:last-child { border-bottom: none; }
-  .flight-meta { font-size: 11.5px; color: var(--muted); margin: 0 0 4px; text-transform: uppercase; letter-spacing: .04em; }
-  .flight-route-row { font-size: 14.5px; display: flex; align-items: center; gap: 10px; }
+  .flight-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; }
+  .flight-route-row { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
   .flight-route-row .arrow { color: var(--muted); }
   .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
   footer { border-top: 1px solid var(--rule); margin-top: 50px; padding-top: 18px; text-align: center; }
@@ -898,7 +901,8 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     .tl-content.has-image, .tl-content.has-image.img-left { flex-direction: column; }
     .tl-image { width: 100%; }
     .tl-image img { height: 170px; }
-    .info-card { padding: 18px 20px; }
+    .cat-row-label { width: 90px; font-size: 12.5px; }
+    .info-card { padding: 22px 0; }
   }
   @media print {
     .cover { break-after: avoid; }
@@ -1042,7 +1046,6 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
               iso={selectedDate}
               data={days[selectedDate]}
               categories={allCategories}
-              onAddCategory={addCustomCategory}
               onChange={(patch) => updateDay(selectedDate, patch)}
               onClose={() => setSelectedDate(null)}
               onDelete={() => removeDay(selectedDate)}
@@ -1060,11 +1063,10 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
             {sortedDayEntries.map(([iso, entry]) => {
               const d = fromISO(iso);
               const cats = (entry.categories || []).map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean);
-              const stubColor = cats[0] ? cats[0].color : null;
               const activities = entry.activities.filter((a) => a.trim());
               return (
                 <div key={iso} className="ticket" onClick={() => setSelectedDate(iso)}>
-                  <div className="date-badge" style={{ borderColor: stubColor ? `${stubColor}55` : "var(--glass-border)", background: stubColor ? `${stubColor}1F` : "rgba(255,255,255,0.5)" }}>
+                  <div className="date-badge">
                     <span className="wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
                     <span className="dnum">{d.getDate()}</span>
                     <span className="mo">{MONTHS[d.getMonth()].slice(0, 3)}</span>
@@ -1119,28 +1121,15 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   );
 }
 
-function DayEditor({ iso, data, categories, onAddCategory, onChange, onClose, onDelete }) {
+function DayEditor({ iso, data, categories, onChange, onClose, onDelete }) {
   const d = fromISO(iso);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
-  const [showNewCat, setShowNewCat] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
-  const newCatRef = useRef(null);
-
-  useEffect(() => {
-    if (showNewCat && newCatRef.current) newCatRef.current.focus();
-  }, [showNewCat]);
 
   const activeCategories = data.categories || [];
   const toggleCategory = (id) => {
     const next = activeCategories.includes(id) ? activeCategories.filter((c) => c !== id) : [...activeCategories, id];
     onChange({ categories: next });
-  };
-  const submitNewCategory = () => {
-    const id = onAddCategory(newCatName);
-    if (id) onChange({ categories: [...activeCategories, id] });
-    setNewCatName("");
-    setShowNewCat(false);
   };
 
   const setActivity = (i, val) => {
@@ -1205,26 +1194,7 @@ function DayEditor({ iso, data, categories, onAddCategory, onChange, onClose, on
             <span className="dot" style={{ background: c.color }} /> {c.label}
           </button>
         ))}
-        {!showNewCat && (
-          <button className="cat-chip new-cat" onClick={() => setShowNewCat(true)}>
-            <Plus size={13} /> Nuova
-          </button>
-        )}
       </div>
-      {showNewCat && (
-        <div className="new-cat-form">
-          <input
-            ref={newCatRef}
-            className="tp-input"
-            value={newCatName}
-            placeholder="Nome categoria"
-            onChange={(e) => setNewCatName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submitNewCategory()}
-          />
-          <button className="export-btn" onClick={submitNewCategory}>Aggiungi</button>
-          <button className="icon-btn" onClick={() => { setShowNewCat(false); setNewCatName(""); }} aria-label="Annulla"><X size={16} /></button>
-        </div>
-      )}
 
       <div className="field-block">
         <p className="field-label">Programma della giornata</p>
@@ -1268,7 +1238,7 @@ function DayEditor({ iso, data, categories, onAddCategory, onChange, onClose, on
       </div>
 
       <div className="day-editor-footer">
-        <button className="danger-link" onClick={onDelete}><Trash2 size={13} /> Elimina giornata</button>
+        <button className="danger-link" onClick={() => { if (window.confirm("Eliminare questa giornata dall'itinerario?")) onDelete(); }}><Trash2 size={13} /> Elimina giornata</button>
       </div>
     </div>
   );
@@ -1313,7 +1283,7 @@ function ExtraCard({ extra, onChange, onDelete }) {
       <div className="extra-card-head">
         <div className="ic" style={{ background: `${meta.color}26`, color: meta.color }}><Icon size={16} /></div>
         <input className="extra-title-input" value={extra.title} onChange={(e) => onChange({ title: e.target.value })} />
-        <button className="icon-btn" onClick={onDelete} aria-label="Elimina scheda"><Trash2 size={15} /></button>
+        <button className="icon-btn" onClick={() => { if (window.confirm("Eliminare questa scheda?")) onDelete(); }} aria-label="Elimina scheda"><Trash2 size={15} /></button>
       </div>
 
       {isFlight ? (
