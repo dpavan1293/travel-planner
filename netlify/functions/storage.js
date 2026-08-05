@@ -15,7 +15,7 @@
 // quest'ultimo apre connessioni TCP dirette che spesso non funzionano bene nell'ambiente
 // serverless di Netlify e causano crash (502) all'avvio della funzione.
 
-const { neon } = require("@netlify/neon");
+import { neon } from "@netlify/neon";
 
 function json(statusCode, body) {
   return {
@@ -25,16 +25,33 @@ function json(statusCode, body) {
   };
 }
 
-exports.handler = async (event, context) => {
+export async function handler(event, context) {
   // Inizializzazione del client dentro l'handler (non a livello di modulo):
   // se il database non è collegato al sito, questo genera un errore leggibile
   // (500 con messaggio) invece di far crashare l'intera funzione (502 muto).
+  export async function handler(event, context) {
+  console.log("START STORAGE");
+
   let sql;
   try {
     sql = neon();
+    console.log("NEON OK");
   } catch (err) {
-    return json(500, { error: `Database non collegato al sito: ${err.message}` });
+    console.error("NEON ERROR", err);
+    return json(500, { error: err.message });
   }
+
+  console.log("BEFORE AUTH");
+
+  const user = context.clientContext && context.clientContext.user;
+
+  if (!user) {
+    console.log("NO USER");
+    return json(401, { error: "Non autenticato" });
+  }
+  console.log("USER OK");
+  ...
+}
 
   const user = context.clientContext && context.clientContext.user;
   if (!user) {
