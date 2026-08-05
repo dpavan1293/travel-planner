@@ -25,7 +25,6 @@ function json(statusCode, body) {
   };
 }
 
-export async function handler(event, context) {
   // Inizializzazione del client dentro l'handler (non a livello di modulo):
   // se il database non è collegato al sito, questo genera un errore leggibile
   // (500 con messaggio) invece di far crashare l'intera funzione (502 muto).
