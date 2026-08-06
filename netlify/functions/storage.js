@@ -1,3 +1,10 @@
+// Funzione serverless: legge/scrive coppie chiave-valore su Netlify Database (Postgres),
+// isolate per utente tramite Netlify Identity.
+//
+// IMPORTANTE: usa sintassi ES Module (import / export) perché il package.json della root
+// dichiara "type": "module" — con sintassi CommonJS (require / exports.handler) la funzione
+// va in crash al caricamento (502 muto), prima ancora che qualsiasi try/catch interno
+// possa intercettare l'errore.
 import { neon } from "@netlify/neon";
 
 function json(statusCode, body) {

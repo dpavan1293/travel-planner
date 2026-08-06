@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import storage from "./storage";
-import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight } from "lucide-react";
+import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search } from "lucide-react";
 
 const CATEGORIES = [
   { id: "citta", label: "Città", color: "#2F6F6B" },
   { id: "mare", label: "Mare", color: "#1F86A8" },
-  { id: "montagna", label: "Montagna", color: "#3F7D4A" },
-  { id: "relax", label: "Relax", color: "#B98B3E" },
+  { id: "cultura", label: "Cultura", color: "#6B4F8A" },
+  { id: "animali", label: "Animali", color: "#6B8E4E" },
   { id: "trasferimento", label: "Trasferimento", color: "#7A7566" },
   { id: "avventura", label: "Avventura", color: "#C1503C" },
 ];
@@ -24,7 +24,7 @@ const DEFAULT_EXTRA_META = { label: "Scheda", icon: FileText, color: "#7A7566" }
 // Icone SVG (stroke, 24x24) usate nel documento HTML esportato — non possiamo usare i componenti
 // lucide-react lì dentro perché è markup statico, quindi ne teniamo una versione disegnata a mano per tipo.
 const EXPORT_ICON_SVGS = {
-  flight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16l20-7-7 20-3-8-8-3z"/></svg>',
+  flight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>',
   security: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
   vaccines: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
   packing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
@@ -37,8 +37,8 @@ const EXPORT_ICON_DEFAULT = '<svg viewBox="0 0 24 24" fill="none" stroke="curren
 const CATEGORY_ICON_SVGS = {
   citta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-4h6v4"/><path d="M9 7h.01M9 11h.01M15 7h.01M15 11h.01"/></svg>',
   mare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0 3 1.5 4.5 0"/><path d="M2 15c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0 3 1.5 4.5 0"/></svg>',
-  montagna: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-12 4 7 3-4 5 9z"/></svg>',
-  relax: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>',
+  cultura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10M9 21V10M15 21V10M19 21V10"/><path d="M2 10l10-6 10 6"/></svg>',
+  animali: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="9" r="1.6"/><circle cx="12" cy="6.5" r="1.6"/><circle cx="17" cy="9" r="1.6"/><path d="M12 12c-3 0-5 2-5 4.2 0 1.6 1.3 2.8 2.9 2.6.9-.1 1.4-.6 2.1-.6s1.2.5 2.1.6c1.6.2 2.9-1 2.9-2.6 0-2.2-2-4.2-5-4.2z"/></svg>',
   trasferimento: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a4 4 0 0 0 4-4 4 4 0 0 0-4-4H9a4 4 0 0 1-4-4 4 4 0 0 1 4-4h7"/></svg>',
   avventura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></svg>',
 };
@@ -141,6 +141,38 @@ const SHARED_STYLES = `
   .cover-input-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
   .cover-input-row .tp-input { flex: 1; }
 
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(15,25,35,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-card {
+    background: rgba(255,255,255,0.88); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--glass-border); border-radius: 22px; width: 100%; max-width: 560px; max-height: 80vh;
+    display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,25,35,0.35); overflow: hidden;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; }
+  .modal-title { font-family: var(--font-display); font-weight: 650; font-size: 17px; margin: 0; }
+  .modal-search-row { display: flex; gap: 8px; padding: 0 20px 14px; }
+  .modal-search-row .tp-input { flex: 1; }
+  .modal-body { padding: 0 20px 16px; overflow-y: auto; flex: 1; }
+  .unsplash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .unsplash-thumb {
+    position: relative; border: none; padding: 0; border-radius: 10px; overflow: hidden; cursor: pointer;
+    aspect-ratio: 4 / 3; background: var(--glass);
+  }
+  .unsplash-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .unsplash-thumb:hover img { filter: brightness(0.85); }
+  .unsplash-credit {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 6px; font-size: 9.5px; color: #fff;
+    background: linear-gradient(0deg, rgba(0,0,0,0.65), transparent); text-align: left;
+  }
+  .modal-footnote { font-size: 11px; color: var(--muted); text-align: center; padding: 10px 20px 16px; margin: 0; }
+  .modal-footnote a { color: var(--accent-dark); }
+  @media (max-width: 480px) {
+    .unsplash-grid { grid-template-columns: repeat(2, 1fr); }
+    .modal-card { max-height: 85vh; }
+  }
+
   .tp-card {
     background: var(--glass); backdrop-filter: blur(26px) saturate(160%); -webkit-backdrop-filter: blur(26px) saturate(160%);
     border: 1px solid var(--glass-border); border-radius: 24px; padding: 20px; margin-bottom: 20px;
@@ -177,8 +209,9 @@ const SHARED_STYLES = `
   .range-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 
   .day-editor { border-top: 1px solid var(--glass-border); margin-top: 16px; padding-top: 16px; }
-  .day-editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .day-editor-date { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+  .day-editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
+  .day-editor-head-actions { display: flex; align-items: center; gap: 4px; }
+  .day-editor-date { font-family: var(--font-mono); font-size: 13px; color: var(--muted); flex: 1; text-align: center; }
   .icon-btn {
     border: 1px solid transparent; background: transparent; cursor: pointer; color: var(--muted);
     display: flex; align-items: center; padding: 5px; border-radius: 8px;
@@ -308,11 +341,11 @@ const SHARED_STYLES = `
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
 
-  .launcher-shell { max-width: 440px; margin: 84px auto 0; text-align: center; }
-  .launcher-title { font-family: var(--font-page-title); font-size: 36px; font-weight: 350; margin: 0 0 8px; }
-  .launcher-sub { font-size: 14px; color: var(--muted); margin: 0 0 26px; }
+  .launcher-shell { max-width: 440px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); display: flex; flex-direction: column; justify-content: center; }
   .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
   .launcher-footer .back-link { margin: 0 auto; }
+  .launcher-title { font-family: var(--font-page-title); font-size: 30px; font-weight: 350; margin: 0 0 6px; }
+  .launcher-sub { font-size: 14px; color: var(--muted); margin: 0 0 26px; }
   .create-card {
     background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border: 1.5px dashed var(--glass-border); border-radius: 20px; padding: 26px; margin-bottom: 24px; text-align: center;
@@ -366,8 +399,8 @@ const SHARED_STYLES = `
     .create-card { padding: 16px; }
     .trip-list { gap: 8px; }
     .trip-card { padding: 11px 13px; gap: 11px; }
-    .launcher-shell { margin-top: 40px; }
-    .launcher-title { font-size: 30px; }
+    .launcher-shell { min-height: calc(100vh - 74px); }
+    .launcher-title { font-size: 24px; }
     .launcher-sub { margin-bottom: 18px; }
   }
 
@@ -568,14 +601,17 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const [extras, setExtras] = useState([]);
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [showCoverInput, setShowCoverInput] = useState(false);
+  const [showUnsplashPicker, setShowUnsplashPicker] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), 1); });
   const [selectedDate, setSelectedDate] = useState(null);
   const dayEditorRef = useRef(null);
+  const scrollOnSelectRef = useRef(false);
 
   useEffect(() => {
-    if (selectedDate && dayEditorRef.current) {
+    if (selectedDate && scrollOnSelectRef.current && dayEditorRef.current) {
       dayEditorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+    scrollOnSelectRef.current = false;
   }, [selectedDate]);
   const [showExtraMenu, setShowExtraMenu] = useState(false);
   const [showRangeForm, setShowRangeForm] = useState(false);
@@ -648,6 +684,16 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const openDay = (iso) => {
     setDays((prev) => (prev[iso] ? prev : { ...prev, [iso]: emptyDay() }));
     setSelectedDate(iso);
+  };
+
+  const navigateDay = (delta) => {
+    if (!selectedDate) return;
+    const next = fromISO(selectedDate);
+    next.setDate(next.getDate() + delta);
+    const nextIso = toISO(next);
+    setDays((prev) => (prev[nextIso] ? prev : { ...prev, [nextIso]: emptyDay() }));
+    setSelectedDate(nextIso);
+    setCurrentMonth(new Date(next.getFullYear(), next.getMonth(), 1));
   };
 
   const updateDay = (iso, patch) => setDays((prev) => ({ ...prev, [iso]: { ...prev[iso], ...patch } }));
@@ -771,23 +817,18 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     </div>`
       : "";
 
-    const infoCards = extras.map((extra) => {
-      const meta = EXTRA_TYPES.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
-      const iconSvg = EXPORT_ICON_SVGS[extra.type] || EXPORT_ICON_DEFAULT;
-      const isPacking = extra.type === "packing";
-      const isCosts = extra.type === "costs";
-      const isFlight = extra.type === "flight";
-      const cardHead = `
-        <div class="info-card-head">
-          <span class="info-icon" style="color:${meta.color}">${iconSvg}</span>
-          <p class="info-card-title">${escapeHtml(extra.title)}</p>
-        </div>`;
-
-      if (isFlight) {
+    const flightCardHtml = extras
+      .filter((extra) => extra.type === "flight")
+      .map((extra) => {
+        const meta = EXTRA_TYPES.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
+        const iconSvg = EXPORT_ICON_SVGS.flight || EXPORT_ICON_DEFAULT;
         const flights = (extra.flights || []).filter((f) => f.number || f.airline || f.depCity || f.arrCity);
         return `
           <div class="info-card flight-card">
-            ${cardHead}
+            <div class="info-card-head">
+              <span class="info-icon" style="color:${meta.color}">${iconSvg}</span>
+              <p class="info-card-title">${escapeHtml(extra.title)}</p>
+            </div>
             ${flights.length ? flights.map((f) => `
               <div class="flight-row">
                 <p class="flight-meta">${[escapeHtml(f.number), escapeHtml(f.airline)].filter(Boolean).join(" · ") || "Volo"}</p>
@@ -798,7 +839,18 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                 </div>
               </div>`).join("") : `<p class="muted">Nessun volo inserito</p>`}
           </div>`;
-      }
+      }).join("");
+
+    const infoCards = extras.filter((extra) => extra.type !== "flight").map((extra) => {
+      const meta = EXTRA_TYPES.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
+      const iconSvg = EXPORT_ICON_SVGS[extra.type] || EXPORT_ICON_DEFAULT;
+      const isPacking = extra.type === "packing";
+      const isCosts = extra.type === "costs";
+      const cardHead = `
+        <div class="info-card-head">
+          <span class="info-icon" style="color:${meta.color}">${iconSvg}</span>
+          <p class="info-card-title">${escapeHtml(extra.title)}</p>
+        </div>`;
 
       if (isCosts) {
         const rows = extra.lines.filter((l) => (l.desc || "").trim() || (l.value || "").trim());
@@ -834,7 +886,8 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
   :root { --paper: #FBF9F4; --ink: #22303B; --muted: #7A7B72; --gold: #C9A24B; --rule: #E7E2D6; }
   * { box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; color: var(--ink); background: var(--paper); margin: 0; }
+  body { font-family: 'Inter', sans-serif; color: var(--ink); background: #DEDAD0; margin: 0; }
+  .sheet { max-width: 880px; margin: 44px auto; background: var(--paper); box-shadow: 0 30px 70px rgba(20,20,15,0.2); overflow: hidden; }
   .cover {
     ${coverStyle}
     min-height: 340px; display: flex; align-items: flex-end; padding: 48px 48px 40px;
@@ -842,7 +895,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   .cover-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin: 0 0 10px; }
   .cover h1 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 42px; color: #fff; margin: 0 0 8px; line-height: 1.1; }
   .cover-sub { font-family: 'Inter', sans-serif; font-size: 14px; color: rgba(255,255,255,0.88); margin: 0; letter-spacing: .01em; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 44px 48px 70px; }
+  .wrap { padding: 44px 48px 70px; }
   .section-label { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 26px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
   .timeline { margin-bottom: 46px; }
   .tl-item { display: flex; gap: 22px; margin-bottom: 30px; break-inside: avoid; }
@@ -874,6 +927,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   .cat-row-bar span { display: block; height: 100%; }
   .cat-row-pct { width: 38px; flex-shrink: 0; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
   .info-stack { display: flex; flex-direction: column; }
+  .flight-top { margin-bottom: 44px; }
   .info-card {
     padding: 28px 4px; border-bottom: 1px solid var(--rule); break-inside: avoid;
   }
@@ -894,6 +948,10 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
   footer { border-top: 1px solid var(--rule); margin-top: 50px; padding-top: 18px; text-align: center; }
   footer p { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  @media (max-width: 940px) {
+    body { background: var(--paper); }
+    .sheet { margin: 0; box-shadow: none; max-width: none; }
+  }
   @media (max-width: 620px) {
     .cover { padding: 34px 26px 30px; min-height: 260px; }
     .cover h1 { font-size: 30px; }
@@ -905,27 +963,32 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     .info-card { padding: 22px 0; }
   }
   @media print {
+    body { background: #fff; }
+    .sheet { margin: 0; box-shadow: none; max-width: none; }
     .cover { break-after: avoid; }
     .tl-item, .info-card { break-inside: avoid; }
   }
 </style>
 </head>
 <body>
-  <div class="cover">
-    <div>
-      <p class="cover-eyebrow">Itinerario di viaggio</p>
-      <h1>${escapeHtml(tripTitle || "Il mio viaggio")}</h1>
-      ${dateRangeLabel ? `<p class="cover-sub">${dateRangeLabel}</p>` : ""}
+  <div class="sheet">
+    <div class="cover">
+      <div>
+        <p class="cover-eyebrow">Itinerario di viaggio</p>
+        <h1>${escapeHtml(tripTitle || "Il mio viaggio")}</h1>
+        ${dateRangeLabel ? `<p class="cover-sub">${dateRangeLabel}</p>` : ""}
+      </div>
     </div>
-  </div>
-  <div class="wrap">
-    ${categoryBreakdownBlock}
-    <p class="section-label">Programma</p>
-    <div class="timeline">
-      ${dayBlocks || '<p class="muted">Nessuna giornata pianificata.</p>'}
+    <div class="wrap">
+      ${categoryBreakdownBlock}
+      ${flightCardHtml ? `<div class="info-stack flight-top">${flightCardHtml}</div>` : ""}
+      <p class="section-label">Programma</p>
+      <div class="timeline">
+        ${dayBlocks || '<p class="muted">Nessuna giornata pianificata.</p>'}
+      </div>
+      ${infoCards ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-stack">${infoCards}</div>` : ""}
+      <footer><p>${escapeHtml(tripTitle || "Itinerario")} — documento di viaggio</p></footer>
     </div>
-    ${extras.length ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-stack">${infoCards}</div>` : ""}
-    <footer><p>${escapeHtml(tripTitle || "Itinerario")} — documento di viaggio</p></footer>
   </div>
 </body>
 </html>`;
@@ -966,6 +1029,14 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
             />
             <button
               className="icon-btn"
+              onClick={() => setShowUnsplashPicker(true)}
+              aria-label="Cerca foto su Unsplash"
+              title="Cerca una foto"
+            >
+              <ImageIcon size={16} />
+            </button>
+            <button
+              className="icon-btn"
               onClick={() => { setShowCoverInput(false); setCoverImageUrl(""); }}
               aria-label="Rimuovi copertina"
             >
@@ -978,6 +1049,13 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
           </button>
         )}
       </div>
+
+      <UnsplashPicker
+        open={showUnsplashPicker}
+        query={tripTitle}
+        onClose={() => setShowUnsplashPicker(false)}
+        onSelect={(url) => { setCoverImageUrl(url); setShowCoverInput(true); }}
+      />
 
       <div className="tp-card no-print">
         <div className="cal-header">
@@ -1049,6 +1127,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
               onChange={(patch) => updateDay(selectedDate, patch)}
               onClose={() => setSelectedDate(null)}
               onDelete={() => removeDay(selectedDate)}
+              onNavigate={navigateDay}
             />
           </div>
         )}
@@ -1065,7 +1144,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
               const cats = (entry.categories || []).map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean);
               const activities = entry.activities.filter((a) => a.trim());
               return (
-                <div key={iso} className="ticket" onClick={() => setSelectedDate(iso)}>
+                <div key={iso} className="ticket" onClick={() => { scrollOnSelectRef.current = true; setSelectedDate(iso); }}>
                   <div className="date-badge">
                     <span className="wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
                     <span className="dnum">{d.getDate()}</span>
@@ -1121,10 +1200,20 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   );
 }
 
-function DayEditor({ iso, data, categories, onChange, onClose, onDelete }) {
+function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavigate }) {
   const d = fromISO(iso);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
+  const touchStartX = useRef(null);
+
+  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(deltaX) < 60) return;
+    onNavigate(deltaX < 0 ? 1 : -1);
+  };
 
   const activeCategories = data.categories || [];
   const toggleCategory = (id) => {
@@ -1153,10 +1242,14 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete }) {
   };
 
   return (
-    <div className="day-editor">
+    <div className="day-editor" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <div className="day-editor-head">
+        <button className="icon-btn" onClick={() => onNavigate(-1)} aria-label="Giorno precedente"><ChevronLeft size={18} /></button>
         <span className="day-editor-date">{WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()} {MONTHS[d.getMonth()].toLowerCase()} {d.getFullYear()}</span>
-        <button className="icon-btn" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        <div className="day-editor-head-actions">
+          <button className="icon-btn" onClick={() => onNavigate(1)} aria-label="Giorno successivo"><ChevronRight size={18} /></button>
+          <button className="icon-btn" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        </div>
       </div>
 
       <div className="field-block">
@@ -1389,6 +1482,94 @@ function ExtraCard({ extra, onChange, onDelete }) {
           <button className="add-line-btn" onClick={addLine}><Plus size={14} /> Aggiungi riga</button>
         </>
       )}
+    </div>
+  );
+}
+
+// Modale di selezione foto da Unsplash. Componente generico e riutilizzabile:
+// oggi è collegato solo all'immagine di copertina del viaggio, ma può essere
+// riusato tale e quale per l'immagine di una singola giornata in futuro
+// (basta passargli query/onSelect diversi da dove serve).
+function UnsplashPicker({ open, query, onClose, onSelect }) {
+  const [searchQuery, setSearchQuery] = useState(query || "");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return;
+    setSearchQuery(query || "");
+    runSearch(query || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const runSearch = async (q) => {
+    const trimmed = (q || "").trim();
+    if (!trimmed) { setResults([]); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/.netlify/functions/unsplash?q=${encodeURIComponent(trimmed)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Errore nella ricerca");
+      setResults(data.results || []);
+    } catch (e) {
+      setError(e.message);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePick = (photo) => {
+    onSelect(photo.full);
+    if (photo.downloadLocation) {
+      fetch(`/.netlify/functions/unsplash?download=${encodeURIComponent(photo.downloadLocation)}`).catch(() => {});
+    }
+    onClose();
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <p className="modal-title">Scegli una foto</p>
+          <button className="icon-btn" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+        </div>
+
+        <div className="modal-search-row">
+          <input
+            className="tp-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && runSearch(searchQuery)}
+            placeholder="Cerca su Unsplash..."
+          />
+          <button className="icon-btn" onClick={() => runSearch(searchQuery)} aria-label="Cerca"><Search size={16} /></button>
+        </div>
+
+        <div className="modal-body">
+          {loading && <p className="empty-hint">Caricamento foto...</p>}
+          {!loading && error && <p className="empty-hint" style={{ color: "var(--coral)" }}>{error}</p>}
+          {!loading && !error && results.length === 0 && (
+            <p className="empty-hint">Nessuna foto trovata. Prova un'altra ricerca.</p>
+          )}
+          {!loading && !error && results.length > 0 && (
+            <div className="unsplash-grid">
+              {results.map((p) => (
+                <button key={p.id} className="unsplash-thumb" onClick={() => handlePick(p)}>
+                  <img src={p.thumb} alt={p.description} loading="lazy" />
+                  {p.authorName && <span className="unsplash-credit">{p.authorName}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="modal-footnote">Foto fornite da <a href="https://unsplash.com" target="_blank" rel="noreferrer">Unsplash</a></p>
+      </div>
     </div>
   );
 }
