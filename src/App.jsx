@@ -1213,6 +1213,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
   const d = fromISO(iso);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
+  const [showUnsplashPicker, setShowUnsplashPicker] = useState(false);
   const touchStartX = useRef(null);
 
   const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
@@ -1281,8 +1282,23 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
             placeholder="https://..."
             onChange={(e) => onChange({ image: e.target.value })}
           />
+          <button
+            className="icon-btn no-print"
+            onClick={() => setShowUnsplashPicker(true)}
+            aria-label="Cerca foto su Unsplash"
+            title="Cerca una foto"
+          >
+            <ImageIcon size={16} />
+          </button>
         </div>
       </div>
+
+      <UnsplashPicker
+        open={showUnsplashPicker}
+        query={data.place}
+        onClose={() => setShowUnsplashPicker(false)}
+        onSelect={(url) => onChange({ image: url })}
+      />
 
       <p className="field-label">Categorie</p>
       <div className="cat-row">
