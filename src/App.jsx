@@ -95,6 +95,7 @@ const SHARED_STYLES = `
     font-family: var(--font-text);
     color: var(--ink);
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 32px 20px 80px;
     box-sizing: border-box;
     position: relative;
@@ -341,7 +342,7 @@ const SHARED_STYLES = `
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
 
-  .launcher-shell { max-width: 440px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); display: flex; flex-direction: column; justify-content: center; }
+  .launcher-shell { max-width: 440px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); min-height: calc(100dvh - 112px); display: flex; flex-direction: column; justify-content: center; }
   .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
   .launcher-footer .back-link { margin: 0 auto; }
   .launcher-title { font-family: var(--font-page-title); font-size: 30px; font-weight: 350; margin: 0 0 6px; }
@@ -378,7 +379,14 @@ const SHARED_STYLES = `
   .new-trip-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
 
   @media (max-width: 600px) {
-    .tp-root { padding: 18px 12px 56px; }
+    /* I filtri di sfocatura e lo sfondo fisso richiedono repaint costosi durante
+       lo scroll sui browser mobile. Manteniamo lo stile, evitando compositing continuo. */
+    .tp-root { padding: 18px 12px 56px; background-attachment: scroll; }
+    .tp-blob { display: none; }
+    .tp-root *, .tp-root *::before, .tp-root *::after {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
     .tp-wrap { max-width: 100%; }
     .tp-header { margin-bottom: 18px; }
     .tp-title-input { font-size: 26px; }
@@ -399,7 +407,8 @@ const SHARED_STYLES = `
     .create-card { padding: 16px; }
     .trip-list { gap: 8px; }
     .trip-card { padding: 11px 13px; gap: 11px; }
-    .launcher-shell { min-height: calc(100vh - 74px); }
+    .ticket, .trip-card, .extra-card { content-visibility: auto; contain-intrinsic-size: auto 100px; }
+    .launcher-shell { min-height: calc(100vh - 74px); min-height: calc(100dvh - 74px); }
     .launcher-title { font-size: 24px; }
     .launcher-sub { margin-bottom: 18px; }
   }
