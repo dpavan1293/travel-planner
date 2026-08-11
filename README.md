@@ -36,10 +36,12 @@ npm run build
 
 ## Struttura del backend
 
-- `src/storage.js` — client frontend, sostituisce l'interfaccia `window.storage` (usata all'origine dentro Claude) con chiamate autenticate alla funzione serverless
+- `src/storage.js` — client frontend, sostituisce l'interfaccia `window.storage` (usata all'origine dentro Claude) con chiamate autenticate alla funzione serverless. Notifica anche gli errori (sessione scaduta, salvataggio fallito) a chi si iscrive con `onStorageError()` — usato da `App.jsx` per mostrare il banner di avviso in cima all'app
 - `netlify/functions/storage.js` — funzione serverless che legge/scrive su Netlify Database, verificando che ogni richiesta provenga da un utente autenticato (tramite `context.clientContext.user`, popolato automaticamente da Netlify Identity)
 - `netlify/functions/unsplash.js` — funzione serverless che fa da proxy verso l'API di ricerca foto di Unsplash, tenendo la chiave API segreta lato server (usata dal componente `UnsplashPicker` in `src/App.jsx`)
-- `netlify/database/migrations/0001_create_kv_store.sql` — schema della tabella: una riga per ogni coppia chiave/valore, isolata per `user_id`
+- `netlify/functions/share.js` — funzione serverless per la condivisione di un viaggio come copia modificabile: chi genera il link (proprietario) e chi lo importa (destinatario) devono entrambi essere autenticati; il destinatario riceve una copia indipendente sul proprio account, l'originale non viene toccato
+- `netlify/database/migrations/0001_create_kv_store.sql` — schema della tabella principale: una riga per ogni coppia chiave/valore, isolata per `user_id`
+- `netlify/database/migrations/0002_create_trip_shares.sql` — tabella dei link di condivisione (token → viaggio + proprietario)
 
 ## Nota
 

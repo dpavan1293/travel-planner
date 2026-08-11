@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import storage from "./storage";
-import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search } from "lucide-react";
+import storage, { authHeaders, onStorageError } from "./storage";
+import netlifyIdentity from "netlify-identity-widget";
+import toucanImage from "./assets/toucan.png";
+import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2 } from "lucide-react";
 
 const CATEGORIES = [
   { id: "citta", label: "Città", color: "#2F6F6B" },
@@ -71,6 +73,22 @@ function getMonthGrid(year, month) {
 }
 
 const emptyDay = () => ({ place: "", activities: [""], accommodation: "", categories: [], image: "" });
+
+// Garantisce che le giornate del viaggio siano sempre consecutive: riempie con giorni vuoti
+// qualsiasi "buco" tra la prima e l'ultima data presente.
+function fillGaps(daysObj) {
+  const keys = Object.keys(daysObj).sort();
+  if (keys.length < 2) return daysObj;
+  const next = { ...daysObj };
+  const cur = fromISO(keys[0]);
+  const end = fromISO(keys[keys.length - 1]);
+  while (cur <= end) {
+    const iso = toISO(cur);
+    if (!next[iso]) next[iso] = emptyDay();
+    cur.setDate(cur.getDate() + 1);
+  }
+  return next;
+}
 const emptyFlight = () => ({ id: uid(), number: "", airline: "", depTime: "", depCity: "", arrTime: "", arrCity: "" });
 
 const SHARED_STYLES = `
@@ -115,6 +133,13 @@ const SHARED_STYLES = `
 
   .tp-header { margin-bottom: 28px; }
   .tp-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .tp-header-actions { display: flex; align-items: center; gap: 8px; }
+  .share-panel {
+    background: rgba(255,255,255,0.4); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px;
+  }
+  .share-link-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .share-link-row .tp-input { flex: 1; font-family: var(--font-mono); font-size: 12px; }
   .tp-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-dark); margin: 0; }
   .back-link {
     display: flex; align-items: center; gap: 5px; border: none; background: var(--glass); backdrop-filter: blur(12px);
@@ -220,6 +245,7 @@ const SHARED_STYLES = `
   .icon-btn:hover { background: var(--glass); color: var(--coral); }
 
   .field-label { font-size: 12px; color: var(--muted); margin: 0 0 6px; font-weight: 500; }
+  .field-hint { font-weight: 400; opacity: .8; }
   .tp-input, .tp-textinput {
     width: 100%; border: 1px solid var(--glass-border); border-radius: 12px; padding: 9px 12px;
     font-family: var(--font-text); font-size: 14px; color: var(--ink); background: rgba(255,255,255,0.55);
@@ -342,10 +368,29 @@ const SHARED_STYLES = `
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
 
-  .launcher-shell { max-width: 440px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); min-height: calc(100dvh - 112px); display: flex; flex-direction: column; justify-content: center; }
+  .error-banner {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: rgba(193,80,60,0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    color: #fff; font-size: 13px; line-height: 1.4; padding: 12px 14px; border-radius: 14px; margin-bottom: 18px;
+    box-shadow: 0 8px 22px rgba(193,80,60,0.3);
+  }
+  .error-banner span { flex: 1; min-width: 180px; }
+  .error-banner button {
+    border: 1px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.16); color: #fff;
+    border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  }
+  .error-banner button:hover { background: rgba(255,255,255,0.28); }
+  .error-banner-close { border: none !important; background: none !important; padding: 4px !important; display: flex; }
+  .error-banner-network { background: rgba(140,106,46,0.94); box-shadow: 0 8px 22px rgba(140,106,46,0.3); }
+
+  .launcher-shell { max-width: 720px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); min-height: calc(100dvh - 112px); display: flex; flex-direction: column; justify-content: center; }
+  .launcher-hero { display: flex; align-items: center; justify-content: center; gap: 26px; margin-bottom: 20px; }
+  .launcher-toucan { width: 166px; height: auto; flex-shrink: 0; object-fit: contain; }
+  .launcher-copy { max-width: 420px; text-align: left; }
+  .launcher-content { width: 100%; max-width: 440px; margin: 0 auto; }
   .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
   .launcher-footer .back-link { margin: 0 auto; }
-  .launcher-title { font-family: var(--font-page-title); font-size: 30px; font-weight: 350; margin: 0 0 6px; }
+  .launcher-title { font-family: var(--font-page-title); font-size: 42px; font-weight: 350; margin: 0 0 8px; }
   .launcher-sub { font-size: 14px; color: var(--muted); margin: 0 0 26px; }
   .create-card {
     background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -369,7 +414,7 @@ const SHARED_STYLES = `
   }
   .trip-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 2px; }
   .trip-card-meta { font-size: 12.5px; color: var(--muted); margin: 0; font-family: var(--font-mono); }
-  .trip-delete { margin-left: auto; }
+  .trip-card-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; }
   .new-trip-btn {
     display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; max-width: 260px; margin-left: auto; margin-right: auto;
     border: 1px dashed var(--glass-border);
@@ -380,7 +425,7 @@ const SHARED_STYLES = `
 
   @media (max-width: 600px) {
     /* I filtri di sfocatura e lo sfondo fisso richiedono repaint costosi durante
-       lo scroll sui browser mobile. Manteniamo lo stile, evitando compositing continuo. */
+       lo scroll sui browser mobile. Li disattiviamo qui, evitando compositing continuo. */
     .tp-root { padding: 18px 12px 56px; background-attachment: scroll; }
     .tp-blob { display: none; }
     .tp-root *, .tp-root *::before, .tp-root *::after {
@@ -409,8 +454,16 @@ const SHARED_STYLES = `
     .trip-card { padding: 11px 13px; gap: 11px; }
     .ticket, .trip-card, .extra-card { content-visibility: auto; contain-intrinsic-size: auto 100px; }
     .launcher-shell { min-height: calc(100vh - 74px); min-height: calc(100dvh - 74px); }
-    .launcher-title { font-size: 24px; }
+    .launcher-title { font-size: 34px; }
     .launcher-sub { margin-bottom: 18px; }
+    .launcher-hero { gap: 16px; }
+    .launcher-toucan { width: 132px; }
+  }
+
+  @media (max-width: 390px) {
+    .launcher-hero { flex-direction: column; gap: 8px; }
+    .launcher-copy { text-align: center; }
+    .launcher-toucan { width: 128px; }
   }
 
   @media print {
@@ -426,10 +479,41 @@ const SHARED_STYLES = `
   }
 `;
 
-export default function TravelPlanner({ user, onLogout }) {
+export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const [view, setView] = useState("loading");
   const [trips, setTrips] = useState([]);
   const [currentTripId, setCurrentTripId] = useState(null);
+  const [importState, setImportState] = useState(pendingShareToken ? "pending" : "none");
+  const [importError, setImportError] = useState("");
+  const [storageError, setStorageError] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onStorageError(({ status }) => {
+      if (status === 401) {
+        setStorageError({
+          type: "auth",
+          message: "La sessione è scaduta. Accedi di nuovo per continuare a salvare le modifiche.",
+        });
+      } else if (status === 0) {
+        setStorageError({
+          type: "network",
+          message: "Impossibile contattare il server. Controlla la connessione: le ultime modifiche potrebbero non essere salvate.",
+        });
+      } else {
+        setStorageError({
+          type: "generic",
+          message: "Si è verificato un errore nel salvataggio. Riprova tra poco.",
+        });
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const onLoginSuccess = () => setStorageError(null);
+    netlifyIdentity.on("login", onLoginSuccess);
+    return () => netlifyIdentity.off("login", onLoginSuccess);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -500,6 +584,58 @@ export default function TravelPlanner({ user, onLogout }) {
     });
   };
 
+  const duplicateTrip = async (id, title) => {
+    try {
+      const res = await storage.get(`trip:${id}`);
+      if (!res || !res.value) return;
+      const data = JSON.parse(res.value);
+      const newId = uid();
+      const newTitle = `${title} (copia)`;
+      data.tripTitle = newTitle;
+      await storage.set(`trip:${newId}`, JSON.stringify(data));
+      const entry = { id: newId, title: newTitle, createdAt: Date.now() };
+      persistIndex([entry, ...trips]);
+    } catch (e) {
+      // in caso di errore l'utente può semplicemente riprovare
+    }
+  };
+
+  // Se si arriva da un link di condivisione (/shared/<token>), proponiamo di importare
+  // una copia modificabile del viaggio sul nostro account, prima di mostrare l'elenco normale.
+  const acceptShare = async () => {
+    setImportState("importing");
+    setImportError("");
+    try {
+      const headers = await authHeaders({ "Content-Type": "application/json" });
+      const res = await fetch("/.netlify/functions/share", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ token: pendingShareToken, accept: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import non riuscito");
+
+      window.history.replaceState({}, "", "/");
+      const entry = { id: data.tripId, title: data.title, createdAt: Date.now() };
+      setTrips((prev) => {
+        const next = [entry, ...prev];
+        storage.set("trips-index", JSON.stringify(next)).catch(() => {});
+        return next;
+      });
+      setImportState("done");
+      setCurrentTripId(data.tripId);
+      setView("planner");
+    } catch (e) {
+      setImportError(e.message || "Qualcosa è andato storto");
+      setImportState("error");
+    }
+  };
+
+  const declineShare = () => {
+    window.history.replaceState({}, "", "/");
+    setImportState("none");
+  };
+
   return (
     <div className="tp-root">
       <style>{SHARED_STYLES}</style>
@@ -507,10 +643,39 @@ export default function TravelPlanner({ user, onLogout }) {
       <div className="tp-blob tp-blob-2" />
       <div className="tp-blob tp-blob-3" />
       <div className="tp-wrap">
-        {view === "loading" && <p className="empty-hint">Caricamento...</p>}
-        {view === "launcher" && (
-          <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} user={user} onLogout={onLogout} />
+        {storageError && (
+          <div className={`error-banner error-banner-${storageError.type}`}>
+            <span>{storageError.message}</span>
+            {storageError.type === "auth" && (
+              <button onClick={() => netlifyIdentity.open("login")}>Accedi di nuovo</button>
+            )}
+            <button className="error-banner-close" onClick={() => setStorageError(null)} aria-label="Chiudi avviso">
+              <X size={14} />
+            </button>
+          </div>
         )}
+        {importState === "pending" || importState === "importing" || importState === "error" ? (
+          <div className="launcher-shell">
+            <p className="tp-eyebrow" style={{ marginBottom: 10 }}>Travel planner</p>
+            <h1 className="launcher-title">Viaggio condiviso</h1>
+            <p className="launcher-sub">
+              {importState === "error"
+                ? importError
+                : "Qualcuno ha condiviso un viaggio con te. Importandolo, ne riceverai una copia modificabile sul tuo account — l'originale non verrà toccato."}
+            </p>
+            <div className="create-stack" style={{ maxWidth: 280, margin: "0 auto" }}>
+              <button className="export-btn" onClick={acceptShare} disabled={importState === "importing"}>
+                {importState === "importing" ? "Importazione..." : "Importa nel mio account"}
+              </button>
+              <button className="cover-toggle-link" onClick={declineShare}>Non ora</button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {view === "loading" && <p className="empty-hint">Caricamento...</p>}
+            {view === "launcher" && (
+              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} user={user} onLogout={onLogout} />
+            )}
         {view === "planner" && currentTripId && (
           <PlannerView
             key={currentTripId}
@@ -519,12 +684,14 @@ export default function TravelPlanner({ user, onLogout }) {
             onTitleChange={(title) => renameTrip(currentTripId, title)}
           />
         )}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function TripLauncher({ trips, onCreate, onOpen, onDelete, user, onLogout }) {
+function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, user, onLogout }) {
   const [showForm, setShowForm] = useState(trips.length === 0);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
@@ -542,12 +709,18 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, user, onLogout }) {
 
   return (
     <div className="launcher-shell">
-      <p className="tp-eyebrow" style={{ marginBottom: 10 }}>Travel planner</p>
-      <h1 className="launcher-title">I tuoi viaggi</h1>
-      <p className="launcher-sub">
-        {trips.length === 0 ? "Dai un nome al tuo primo viaggio per iniziare." : "Scegli un viaggio da continuare a pianificare o creane uno nuovo."}
-      </p>
+      <div className="launcher-hero">
+        <img className="launcher-toucan" src={toucanImage} alt="Tucano" />
+        <div className="launcher-copy">
+          <p className="tp-eyebrow" style={{ marginBottom: 10 }}>Travel planner</p>
+          <h1 className="launcher-title">Tucano Travel</h1>
+          <p className="launcher-sub">
+            {trips.length === 0 ? "Dai un nome al tuo primo viaggio per iniziare." : "Scegli un viaggio da continuare a pianificare o creane uno nuovo."}
+          </p>
+        </div>
+      </div>
 
+      <div className="launcher-content">
       {showForm ? (
         <div className="create-card">
           <p className="field-label">Nome del viaggio</p>
@@ -581,17 +754,28 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, user, onLogout }) {
                 <p className="trip-card-title">{t.title}</p>
                 <p className="trip-card-meta">Creato il {formatShortDate(t.createdAt)}</p>
               </div>
-              <button
-                className="icon-btn trip-delete"
-                aria-label="Elimina viaggio"
-                onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminare il viaggio "${t.title}"? L'azione non è reversibile.`)) onDelete(t.id); }}
-              >
-                <Trash2 size={15} />
-              </button>
+              <div className="trip-card-actions">
+                <button
+                  className="icon-btn"
+                  aria-label="Duplica viaggio"
+                  title="Duplica"
+                  onClick={(e) => { e.stopPropagation(); onDuplicate(t.id, t.title); }}
+                >
+                  <Copy size={15} />
+                </button>
+                <button
+                  className="icon-btn"
+                  aria-label="Elimina viaggio"
+                  onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminare il viaggio "${t.title}"? L'azione non è reversibile.`)) onDelete(t.id); }}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
+      </div>
 
       {user && (
         <div className="launcher-footer">
@@ -626,6 +810,8 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const [showRangeForm, setShowRangeForm] = useState(false);
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
+  const [showShiftForm, setShowShiftForm] = useState(false);
+  const [shiftNewStart, setShiftNewStart] = useState("");
   const [loaded, setLoaded] = useState(false);
 
   const allCategories = CATEGORIES;
@@ -649,7 +835,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                 image: d.image || "",
               };
             });
-            setDays(migrated);
+            setDays(fillGaps(migrated));
             const isoKeys = Object.keys(migrated);
             if (isoKeys.length) {
               const earliest = isoKeys.sort()[0];
@@ -691,7 +877,10 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const today = new Date();
 
   const openDay = (iso) => {
-    setDays((prev) => (prev[iso] ? prev : { ...prev, [iso]: emptyDay() }));
+    setDays((prev) => {
+      if (prev[iso]) return prev;
+      return fillGaps({ ...prev, [iso]: emptyDay() });
+    });
     setSelectedDate(iso);
   };
 
@@ -700,16 +889,40 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     const next = fromISO(selectedDate);
     next.setDate(next.getDate() + delta);
     const nextIso = toISO(next);
-    setDays((prev) => (prev[nextIso] ? prev : { ...prev, [nextIso]: emptyDay() }));
+    setDays((prev) => (prev[nextIso] ? prev : fillGaps({ ...prev, [nextIso]: emptyDay() })));
     setSelectedDate(nextIso);
     setCurrentMonth(new Date(next.getFullYear(), next.getMonth(), 1));
   };
 
   const updateDay = (iso, patch) => setDays((prev) => ({ ...prev, [iso]: { ...prev[iso], ...patch } }));
 
-  const removeDay = (iso) => {
-    setDays((prev) => { const n = { ...prev }; delete n[iso]; return n; });
-    if (selectedDate === iso) setSelectedDate(null);
+  const removeDay = (isoToRemove) => {
+    setDays((prev) => {
+      const keys = Object.keys(prev).sort();
+      if (!keys.length) return prev;
+      const next = { ...prev };
+      delete next[isoToRemove];
+      const first = keys[0];
+      const last = keys[keys.length - 1];
+      // Se il giorno eliminato era nel mezzo dell'itinerario, comprimiamo spostando
+      // indietro di un giorno tutto ciò che viene dopo, per non lasciare "buchi".
+      if (isoToRemove !== first && isoToRemove !== last && isoToRemove > first && isoToRemove < last) {
+        const removedDate = fromISO(isoToRemove);
+        const compacted = {};
+        Object.entries(next).forEach(([iso, entry]) => {
+          const d = fromISO(iso);
+          if (d > removedDate) {
+            d.setDate(d.getDate() - 1);
+            compacted[toISO(d)] = entry;
+          } else {
+            compacted[iso] = entry;
+          }
+        });
+        return compacted;
+      }
+      return next;
+    });
+    if (selectedDate === isoToRemove) setSelectedDate(null);
   };
 
   const createRange = () => {
@@ -725,12 +938,36 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         if (!next[iso]) next[iso] = emptyDay();
         cur.setDate(cur.getDate() + 1);
       }
-      return next;
+      return fillGaps(next);
     });
     setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
     setShowRangeForm(false);
     setRangeStart("");
     setRangeEnd("");
+  };
+
+  const shiftTripDates = () => {
+    if (!shiftNewStart) return;
+    const keys = Object.keys(days).sort();
+    if (!keys.length) return;
+    const oldStart = fromISO(keys[0]);
+    const newStart = fromISO(shiftNewStart);
+    const deltaDays = Math.round((newStart - oldStart) / 86400000);
+    if (deltaDays !== 0) {
+      setDays((prev) => {
+        const next = {};
+        Object.entries(prev).forEach(([iso, entry]) => {
+          const d = fromISO(iso);
+          d.setDate(d.getDate() + deltaDays);
+          next[toISO(d)] = entry;
+        });
+        return next;
+      });
+      setCurrentMonth(new Date(newStart.getFullYear(), newStart.getMonth(), 1));
+      setSelectedDate(null);
+    }
+    setShowShiftForm(false);
+    setShiftNewStart("");
   };
 
   const addExtra = (type) => {
@@ -1013,15 +1250,74 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     URL.revokeObjectURL(url);
   };
 
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [shareStatus, setShareStatus] = useState("idle");
+  const [shareLink, setShareLink] = useState("");
+  const [shareError, setShareError] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const generateShareLink = async () => {
+    setShareStatus("loading");
+    setShareError("");
+    try {
+      const headers = await authHeaders({ "Content-Type": "application/json" });
+      const res = await fetch("/.netlify/functions/share", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ tripId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Impossibile generare il link");
+      setShareLink(`${window.location.origin}/shared/${data.token}`);
+      setShareStatus("ready");
+    } catch (e) {
+      setShareError(e.message || "Qualcosa è andato storto");
+      setShareStatus("error");
+    }
+  };
+
+  const copyShareLink = () => {
+    navigator.clipboard?.writeText(shareLink).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  };
+
   return (
     <>
       <div className="tp-header">
         <div className="tp-header-top no-print">
           <button className="back-link" onClick={onBack}><ArrowLeft size={14} /> I tuoi viaggi</button>
-          <button className="export-btn" onClick={exportItinerary} disabled={!loaded}>
-            <Printer size={14} /> Esporta itinerario
-          </button>
+          <div className="tp-header-actions">
+            <button
+              className="icon-btn"
+              onClick={() => { setShowSharePanel(true); if (shareStatus === "idle") generateShareLink(); }}
+              aria-label="Condividi viaggio"
+              title="Condividi"
+            >
+              <Share2 size={16} />
+            </button>
+            <button className="export-btn" onClick={exportItinerary} disabled={!loaded}>
+              <Printer size={14} /> Esporta itinerario
+            </button>
+          </div>
         </div>
+        {showSharePanel && (
+          <div className="share-panel no-print">
+            {shareStatus === "loading" && <p className="field-label">Generazione del link...</p>}
+            {shareStatus === "ready" && (
+              <>
+                <p className="field-label">Chiunque abbia questo link può ricevere una copia modificabile del viaggio sul proprio account</p>
+                <div className="share-link-row">
+                  <input className="tp-input" value={shareLink} readOnly onFocus={(e) => e.target.select()} />
+                  <button className="export-btn" onClick={copyShareLink}>{shareCopied ? "Copiato!" : "Copia link"}</button>
+                </div>
+              </>
+            )}
+            {shareStatus === "error" && <p className="field-label" style={{ color: "var(--coral)" }}>{shareError}</p>}
+            <button className="cover-toggle-link" onClick={() => setShowSharePanel(false)}>Chiudi</button>
+          </div>
+        )}
         <input
           className="tp-title-input"
           value={tripTitle}
@@ -1127,6 +1423,30 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
           )}
         </div>
 
+        {sortedDayEntries.length > 0 && (
+          <div className="range-zone">
+            {!showShiftForm ? (
+              <button
+                className="add-line-btn"
+                onClick={() => { setShiftNewStart(sortedDayEntries[0][0]); setShowShiftForm(true); }}
+              >
+                <ArrowLeftRight size={14} /> Sposta le date del viaggio
+              </button>
+            ) : (
+              <div className="range-form">
+                <p className="field-label">
+                  Nuova data di partenza <span className="field-hint">(attuale: {fromISO(sortedDayEntries[0][0]).getDate()} {MONTHS[fromISO(sortedDayEntries[0][0]).getMonth()].toLowerCase()} {fromISO(sortedDayEntries[0][0]).getFullYear()})</span>
+                </p>
+                <input type="date" className="tp-input" value={shiftNewStart} onChange={(e) => setShiftNewStart(e.target.value)} />
+                <div className="range-form-actions">
+                  <button className="danger-link" onClick={() => setShowShiftForm(false)}>Annulla</button>
+                  <button className="export-btn" onClick={shiftTripDates}>Sposta</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {selectedDate && days[selectedDate] && (
           <div ref={dayEditorRef}>
             <DayEditor
@@ -1213,7 +1533,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
   const d = fromISO(iso);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
-  const [showUnsplashPicker, setShowUnsplashPicker] = useState(false);
+  const [showDayUnsplashPicker, setShowDayUnsplashPicker] = useState(false);
   const touchStartX = useRef(null);
 
   const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
@@ -1283,8 +1603,8 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
             onChange={(e) => onChange({ image: e.target.value })}
           />
           <button
-            className="icon-btn no-print"
-            onClick={() => setShowUnsplashPicker(true)}
+            className="icon-btn"
+            onClick={() => setShowDayUnsplashPicker(true)}
             aria-label="Cerca foto su Unsplash"
             title="Cerca una foto"
           >
@@ -1294,9 +1614,9 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
       </div>
 
       <UnsplashPicker
-        open={showUnsplashPicker}
-        query={data.place}
-        onClose={() => setShowUnsplashPicker(false)}
+        open={showDayUnsplashPicker}
+        query={data.place || ""}
+        onClose={() => setShowDayUnsplashPicker(false)}
         onSelect={(url) => onChange({ image: url })}
       />
 

@@ -6,6 +6,12 @@ import App from "./App.jsx";
 
 netlifyIdentity.init();
 
+// Un link di condivisione (/shared/<token>) va comunque aperto da un utente loggato:
+// serve un account per ricevere la copia del viaggio sul proprio spazio. Il token
+// viene semplicemente passato all'app una volta effettuato l'accesso.
+const sharedTokenMatch = window.location.pathname.match(/^\/shared\/([a-zA-Z0-9]+)/);
+const pendingShareToken = sharedTokenMatch ? sharedTokenMatch[1] : null;
+
 function Root() {
   const [user, setUser] = useState(netlifyIdentity.currentUser());
 
@@ -28,7 +34,7 @@ function Root() {
     return (
       <div
         style={{
-          minHeight: "100dvh",
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -42,7 +48,9 @@ function Root() {
       >
         <h1 style={{ fontSize: 26, fontWeight: 650, color: "#1B2430", margin: 0 }}>Travel Planner</h1>
         <p style={{ fontSize: 14, color: "rgba(27,36,48,0.7)", margin: 0, maxWidth: 320 }}>
-          Accedi per vedere i tuoi viaggi, sincronizzati su tutti i tuoi dispositivi.
+          {pendingShareToken
+            ? "Accedi o registrati per ricevere il viaggio che ti è stato condiviso."
+            : "Accedi per vedere i tuoi viaggi, sincronizzati su tutti i tuoi dispositivi."}
         </p>
         <button
           onClick={() => netlifyIdentity.open("login")}
@@ -63,7 +71,7 @@ function Root() {
     );
   }
 
-  return <App user={user} onLogout={() => netlifyIdentity.logout()} />;
+  return <App user={user} onLogout={() => netlifyIdentity.logout()} pendingShareToken={pendingShareToken} />;
 }
 
 createRoot(document.getElementById("root")).render(
