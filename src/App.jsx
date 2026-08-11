@@ -386,7 +386,7 @@ const SHARED_STYLES = `
   .launcher-shell { max-width: 720px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); min-height: calc(100dvh - 112px); display: flex; flex-direction: column; justify-content: center; }
   .launcher-hero { display: flex; align-items: center; justify-content: center; gap: 26px; margin-bottom: 20px; }
   .launcher-toucan { width: 166px; height: auto; flex-shrink: 0; object-fit: contain; }
-  .launcher-copy { max-width: 420px; text-align: left; }
+  .launcher-copy { max-width: 420px; padding-top: 40px; text-align: left; }
   .launcher-content { width: 100%; max-width: 440px; margin: 0 auto; }
   .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
   .launcher-footer .back-link { margin: 0 auto; }
@@ -457,13 +457,13 @@ const SHARED_STYLES = `
     .launcher-title { font-size: 34px; }
     .launcher-sub { margin-bottom: 18px; }
     .launcher-hero { gap: 16px; }
-    .launcher-toucan { width: 132px; }
+    .launcher-toucan { width: 120px; }
   }
 
   @media (max-width: 390px) {
     .launcher-hero { flex-direction: column; gap: 8px; }
-    .launcher-copy { text-align: center; }
-    .launcher-toucan { width: 128px; }
+    .launcher-copy { text-align: center; padding-top: 20px; }
+    .launcher-toucan { width: 100px; }
   }
 
   @media print {
@@ -712,8 +712,8 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, user, on
       <div className="launcher-hero">
         <img className="launcher-toucan" src={toucanImage} alt="Tucano" />
         <div className="launcher-copy">
-          <p className="tp-eyebrow" style={{ marginBottom: 10 }}>Travel planner</p>
-          <h1 className="launcher-title">Tucano Travel</h1>
+          <p className="tp-eyebrow" style={{ marginBottom: 10 }}>TucanoPlanner</p>
+          <h1 className="launcher-title">TucanoPlanner</h1>
           <p className="launcher-sub">
             {trips.length === 0 ? "Dai un nome al tuo primo viaggio per iniziare." : "Scegli un viaggio da continuare a pianificare o creane uno nuovo."}
           </p>
