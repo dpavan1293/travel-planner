@@ -449,8 +449,8 @@ const SHARED_STYLES = `
     font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
     background: rgba(255,255,255,0.5); border: 1px solid var(--glass-border); padding: 3px 10px; border-radius: 20px; white-space: nowrap;
   }
-  .map-frame { max-height:240px; margin-top: 4px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(15,30,45,0.1); }
-  .map-frame svg { display: block; width: 100%; height: auto; }
+  .map-frame { margin-top: 4px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(15,30,45,0.1); }
+  .map-frame svg { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
   .tm-root {
     --map-sea: #DCEDF2;
     --map-land: #F6EFE0;

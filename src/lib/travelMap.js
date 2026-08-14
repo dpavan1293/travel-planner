@@ -100,11 +100,7 @@ export function buildTravelMapSvg(points, opts = {}) {
   const { markers, route } = points || {};
   if (!markers || !markers.length) return null;
 
-  const W = 1000;          // larghezza base del viewBox
-  const hMin = 380;        // altezza minima (mappa troppo "sottile")
-  const hMax = 720;        // altezza massima
-  const minAspect = 0.62;  // mai più alta che larga oltre questo rapporto
-  const maxAspect = 2.4;   // mai più larga che alta oltre questo rapporto
+  const W = 1000;          // lato base del viewBox (formato quadrato)
   const title = opts.title || "";
 
   // 1) Longitudini continue (gestione antimeridiano).
@@ -119,47 +115,25 @@ export function buildTravelMapSvg(points, opts = {}) {
 
   // 2) Proiezione equirettangolare: x = lon·cos(lat0), y = -lat (scala uniforme).
   const f = (lon) => lon * Math.cos(lat0 * RAD);
-  let minX = f(lonLo);
-  let bw = f(lonHi) - minX;
-  let bh = latHi - latLo;
+  const bw = f(lonHi) - f(lonLo);
+  const bh = latHi - latLo;
 
-  // Respiro attorno ai dati.
-  const lonPad = Math.max(1.5, (lonHi - lonLo) * 0.08);
-  const latPad = Math.max(1.2, (latHi - latLo) * 0.1);
-  lonLo -= lonPad; lonHi += lonPad;
-  latLo -= latPad; latHi += latPad;
+  // 3) ViewBox QUADRATO che contiene sempre tutti i punti, con un po' di respiro:
+  //    entrambi gli assi usano la stessa estensione (il maggiore dei due), quindi
+  //    la mappa è sempre un quadrato e il percorso resta interamente visibile.
+  const pad = Math.max(bw, bh) * 0.16 + 1;
+  const side = Math.max(bw, bh) + pad * 2;
+  const cX = (f(lonLo) + f(lonHi)) / 2;
+  const cY = (latLo + latHi) / 2;
+  const minX = cX - side / 2;
+  const maxLat = cY + side / 2;
 
-  // Vincola l'aspetto finale (mai eccessivamente alta o larga), aggiungendo
-  // "mare" attorno ai dati finché il rapporto rientra in un intervallo elegante.
-  const fixAspect = () => {
-    bw = f(lonHi) - f(lonLo);
-    bh = latHi - latLo;
-    const aspect = bw / bh;
-    if (aspect < minAspect) {
-      const target = bh * minAspect;
-      const extra = (target - bw) / 2 / Math.cos(lat0 * RAD);
-      lonLo -= extra; lonHi += extra;
-    } else if (aspect > maxAspect) {
-      const target = bw / maxAspect;
-      const extra = (target - bh) / 2;
-      latLo -= extra; latHi += extra;
-    }
-  };
-  fixAspect();
-
-  minX = f(lonLo);
-  bw = f(lonHi) - minX;
-  bh = latHi - latLo;
-
-  let s = W / bw;
-  const h = bh * s;
-  if (h < hMin) s = hMin / bh;
-  else if (h > hMax) s = hMax / bh;
-  const width = bw * s;
-  const height = bh * s;
+  const s = W / side;
+  const width = W;
+  const height = W;
 
   const X = (x) => (x - minX) * s;
-  const Y = (lat) => (latHi - lat) * s; // nord in alto
+  const Y = (lat) => (maxLat - lat) * s; // nord in alto
   const F = (v) => v.toFixed(1);
 
   // 3) Terre emerse: solo i poligoni che intersecano il viewport, eventualmente

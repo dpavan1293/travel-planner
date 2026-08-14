@@ -74,7 +74,7 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
   .flight-route-row { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
   .flight-route-row .arrow { color: var(--muted); }
   .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
-  .map-frame { margin-bottom: 44px; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; box-shadow: 0 12px 28px rgba(34,48,59,0.1); break-inside: avoid; }
+  .map-frame { max-width: 560px; margin: 0 auto 44px; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; box-shadow: 0 12px 28px rgba(34,48,59,0.1); break-inside: avoid; }
   .map-frame svg { display: block; width: 100%; height: auto; }
   .tm-root {
     --map-sea: #E7EFEE;
@@ -124,7 +124,6 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
       </div>
     </div>
     <div class="wrap">
-      {{MAP}}
       {{STYLE_BREAKDOWN}}
       {{FLIGHTS}}
       <p class="section-label">Programma</p>
@@ -132,6 +131,7 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
         {{DAYS}}
       </div>
       {{EXTRAS}}
+      {{MAP}}
       <footer><p>{{TITLE}} — documento di viaggio</p></footer>
     </div>
   </div>
