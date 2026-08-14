@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
-import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2 } from "lucide-react";
+import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon } from "lucide-react";
 import {
   CATEGORIES,
   EXTRA_META,
@@ -13,6 +13,7 @@ import {
   toISO,
   fromISO,
 } from "./lib/exportTemplate";
+import { routePointsFromList, buildTravelMapSvg } from "./lib/travelMap";
 
 // EXTRA_TYPES aggiunge l'icona lucide-react (usata solo nella UI) ai dati condivisi.
 const EXTRA_ICONS = {
@@ -22,6 +23,7 @@ const EXTRA_ICONS = {
   packing: Luggage,
   costs: Receipt,
   notes: StickyNote,
+  map: MapIcon,
 };
 const EXTRA_TYPES = EXTRA_META.map((m) => ({ ...m, icon: EXTRA_ICONS[m.id] }));
 const DEFAULT_EXTRA_META = { ...DEFAULT_EXTRA_META_BASE, icon: FileText };
@@ -206,7 +208,8 @@ const SHARED_STYLES = `
   #spostamento { display:none}
   .range-form { border: 1px solid var(--glass-border); background: rgba(255,255,255,0.2); border-radius: 16px; padding: 14px; }
   .range-form-row { display: flex; gap: 12px; margin-bottom: 12px; }
-  .range-form-row > div { flex: 1; }
+  .range-form-row > div { flex: 1; min-width: 0; }
+  .range-form-row input[type="date"] { min-width: 0; }
   .range-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 
   .day-editor { border-top: 1px solid var(--glass-border); margin-top: 16px; padding-top: 16px; }
@@ -414,6 +417,70 @@ const SHARED_STYLES = `
   }
   .new-trip-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
 
+  /* --- Ricerca luogo (geocoding) --- */
+  .loc-search { position: relative; min-width: 0; }
+  .loc-search-row { position: relative; display: flex; align-items: center; }
+  .loc-search-ic { position: absolute; left: 12px; color: var(--muted); pointer-events: none; }
+  .loc-search-row .tp-input { padding-left: 34px; padding-right: 34px; }
+  .loc-spinner {
+    position: absolute; right: 12px; width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid rgba(46,111,142,0.18); border-top-color: var(--accent); animation: spin .7s linear infinite;
+  }
+  .loc-results {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border); border-radius: 12px; box-shadow: 0 12px 28px rgba(15,30,45,0.16);
+    max-height: 240px; overflow-y: auto; padding: 4px;
+  }
+  .loc-result {
+    display: flex; align-items: center; gap: 9px; width: 100%; border: none; background: none;
+    text-align: left; padding: 8px 10px; font-size: 13px; color: var(--ink); cursor: pointer; border-radius: 9px;
+  }
+  .loc-result:hover { background: rgba(46,111,142,0.08); color: var(--accent-dark); }
+  .loc-result svg { flex-shrink: 0; color: var(--muted); }
+  .loc-result span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* --- Scheda Mappa --- */
+  .map-card { display: flex; flex-direction: column; }
+  .map-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .map-card-legend { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .map-card-legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .map-card-count {
+    font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    background: rgba(255,255,255,0.5); border: 1px solid var(--glass-border); padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  .map-frame { max-height:240px; margin-top: 4px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(15,30,45,0.1); }
+  .map-frame svg { display: block; width: 100%; height: auto; }
+  .tm-root {
+    --map-sea: #DCEDF2;
+    --map-land: #F6EFE0;
+    --map-coast: rgba(46,111,142,0.25);
+    --map-route: var(--accent);
+    --map-route-casing: rgba(46,111,142,0.2);
+    --map-marker-ring: var(--accent);
+    --map-marker-bg: #FFFFFF;
+    --map-marker-text: var(--accent-dark);
+    --map-label: var(--accent-dark);
+    --map-line-w: 3;
+    --map-marker-r: 10;
+    font-family: var(--font-mono);
+  }
+  .map-places { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 12px; }
+  .map-place-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .map-place-row {
+    display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.45);
+    border: 1px solid var(--glass-border); border-radius: 12px; padding: 6px 6px 6px 10px;
+  }
+  .map-place-num {
+    width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    background: var(--accent); color: #fff; font-family: var(--font-display); font-size: 11px; font-weight: 650;
+  }
+  .map-place-name { flex: 1; min-width: 0; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .map-place-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .map-place-actions .icon-btn { color: var(--muted); }
+  .map-place-actions .icon-btn:hover:not(:disabled) { color: var(--coral); }
+  .map-place-actions .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
   @media (max-width: 600px) {
     /* I filtri di sfocatura e lo sfondo fisso richiedono repaint costosi durante
        lo scroll sui browser mobile. Li disattiviamo qui, evitando compositing continuo. */
@@ -426,8 +493,11 @@ const SHARED_STYLES = `
     .tp-wrap { max-width: 100%; }
     .tp-header { margin-bottom: 18px; }
     .tp-title-input { font-size: 26px; }
+    .tp-input, .tp-textinput, .extra-title-input { font-size: 16px; }
+    .share-link-row .tp-input { font-size: 12px; }
     .tp-card { padding: 14px; border-radius: 18px; margin-bottom: 12px; }
     .cal-header { margin-bottom: 8px; }
+    .range-form-row { gap: 8px; }
     .field-block { margin-bottom: 12px; }
     .field-label { margin-bottom: 4px; }
     .cat-row { margin-bottom: 8px; gap: 5px; }
@@ -464,6 +534,7 @@ const SHARED_STYLES = `
     .tp-title-input { border: none !important; }
     .tp-card { background: #fff; backdrop-filter: none; box-shadow: none; border: none; border-radius: 0; padding: 0; margin-bottom: 22px; break-inside: avoid; }
     .icon-btn, .add-line-btn, .grip, .add-extra-wrap, .danger-link, .day-editor, .cal-grid, .cal-header, .range-zone { display: none !important; }
+    .map-places, .map-card-head, .loc-search { display: none !important; }
     .tp-input, .tp-textinput, .extra-title-input { border: none !important; background: transparent !important; backdrop-filter: none !important; padding: 2px 0 !important; }
     .ticket, .extra-card { background: #fff; backdrop-filter: none; border: 1px solid #ddd; break-inside: avoid; }
     .list-row { margin-bottom: 2px; }
@@ -1030,6 +1101,8 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     const id = uid();
     if (type === "flight") {
       setExtras((prev) => [...prev, { id, type, title: meta.label, flights: [emptyFlight()] }]);
+    } else if (type === "map") {
+      setExtras((prev) => [...prev, { id, type, title: meta.label, locations: [] }]);
     } else {
       const initialLines = type === "costs" ? [{ desc: "", value: "" }] : [{ text: "", done: false }];
       setExtras((prev) => [...prev, { id, type, title: meta.label, lines: initialLines }]);
@@ -1529,6 +1602,7 @@ function ExtraCard({ extra, onChange, onDelete }) {
   const isPacking = extra.type === "packing";
   const isCosts = extra.type === "costs";
   const isFlight = extra.type === "flight";
+  const isMap = extra.type === "map";
 
   const setLine = (i, patch) => {
     const next = [...extra.lines];
@@ -1565,7 +1639,9 @@ function ExtraCard({ extra, onChange, onDelete }) {
         <button className="icon-btn" onClick={() => { if (window.confirm("Eliminare questa scheda?")) onDelete(); }} aria-label="Elimina scheda"><Trash2 size={15} /></button>
       </div>
 
-      {isFlight ? (
+      {isMap ? (
+        <MapCard extra={extra} onChange={onChange} />
+      ) : isFlight ? (
         <>
           {extra.flights.map((f, i) => (
             <div className="flight-card" key={f.id || i}>
@@ -1668,6 +1744,154 @@ function ExtraCard({ extra, onChange, onDelete }) {
           <button className="add-line-btn" onClick={addLine}><Plus size={14} /> Aggiungi riga</button>
         </>
       )}
+    </div>
+  );
+}
+
+// Ricerca di un luogo tramite geocoding OpenStreetMap (/.netlify/functions/geocode).
+// Gestisce input, debounce, risultati e chiusura del dropdown; onPick riceve { name, lat, lon }.
+function useGeocodeSearch({ onPick, resetAfterPick = false }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const timer = useRef(null);
+  const wrapRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  useEffect(() => {
+    const closeOnOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", closeOnOutside);
+    document.addEventListener("touchstart", closeOnOutside);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutside);
+      document.removeEventListener("touchstart", closeOnOutside);
+    };
+  }, []);
+
+  const runSearch = async (q) => {
+    const trimmed = (q || "").trim();
+    if (!trimmed) { setResults([]); setOpen(false); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/.netlify/functions/geocode?q=${encodeURIComponent(trimmed)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Errore nella ricerca");
+      setResults(data.results || []);
+      setOpen(true);
+    } catch (e) {
+      setError(e.message);
+      setResults([]);
+      setOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (val) => {
+    setQuery(val);
+    clearTimeout(timer.current);
+    if (!val.trim()) { setResults([]); setOpen(false); return; }
+    timer.current = setTimeout(() => runSearch(val), 350);
+  };
+
+  const pick = (r) => {
+    onPick({ name: r.name, lat: r.lat, lon: r.lon });
+    setResults([]);
+    setOpen(false);
+    setError("");
+    if (resetAfterPick) setQuery("");
+  };
+
+  return { query, setQuery, results, open, setOpen, loading, error, wrapRef, handleChange, pick };
+}
+
+// Scheda "Mappa": l'utente aggiunge liberamente i luoghi che vuole (geocoding),
+// la mappa SVG statica mostra il percorso nell'ordine della lista.
+function MapCard({ extra, onChange }) {
+  const locations = extra.locations || [];
+  const points = routePointsFromList(locations);
+  const hasLocations = points.markers.length > 0;
+  const svg = hasLocations ? buildTravelMapSvg(points, { title: extra.title }) : null;
+  const geo = useGeocodeSearch({ onPick: (loc) => onChange({ locations: [...locations, loc] }), resetAfterPick: true });
+
+  const move = (i, delta) => {
+    const j = i + delta;
+    if (j < 0 || j >= locations.length) return;
+    const next = [...locations];
+    const [item] = next.splice(i, 1);
+    next.splice(j, 0, item);
+    onChange({ locations: next });
+  };
+
+  const remove = (i) => onChange({ locations: locations.filter((_, idx) => idx !== i) });
+
+  return (
+    <div className="map-card">
+      <div className="map-card-head">
+        <div className="map-card-legend"><span className="map-card-legend-dot" /><span>Percorso del viaggio</span></div>
+        {hasLocations && <span className="map-card-count">{points.markers.length} tappe</span>}
+      </div>
+
+      {hasLocations ? (
+        <div className="map-frame" dangerouslySetInnerHTML={{ __html: svg }} />
+      ) : (
+        <p className="empty-hint">Aggiungi i luoghi che vuoi: la mappa del percorso verrà generata nell'export.</p>
+      )}
+
+      <div className="map-places">
+        <p className="field-label">Luoghi del percorso</p>
+        <div className="loc-search" ref={geo.wrapRef}>
+          <div className="loc-search-row">
+            <MapPin size={14} className="loc-search-ic" />
+            <input
+              className="tp-input"
+              value={geo.query}
+              placeholder="Cerca un luogo da aggiungere..."
+              onChange={(e) => geo.handleChange(e.target.value)}
+              onFocus={() => { if (geo.results.length || geo.loading || geo.error) geo.setOpen(true); }}
+            />
+            {geo.loading && <span className="loc-spinner" aria-hidden="true"></span>}
+          </div>
+          {geo.open && (
+            <div className="loc-results">
+              {geo.loading && <p className="empty-hint">Ricerca in corso...</p>}
+              {!geo.loading && geo.error && <p className="empty-hint" style={{ color: "var(--coral)" }}>{geo.error}</p>}
+              {!geo.loading && !geo.error && geo.results.length === 0 && geo.query.trim() && (
+                <p className="empty-hint">Nessun risultato per "{geo.query}".</p>
+              )}
+              {!geo.loading && geo.results.map((r, i) => (
+                <button key={`${r.lat}-${r.lon}-${i}`} className="loc-result" onMouseDown={() => geo.pick(r)}>
+                  <MapPin size={13} /> <span>{r.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {locations.length === 0 ? (
+          <p className="empty-hint">Nessun luogo aggiunto.</p>
+        ) : (
+          <div className="map-place-list">
+            {locations.map((loc, i) => (
+              <div key={i} className="map-place-row">
+                <span className="map-place-num">{i + 1}</span>
+                <span className="map-place-name">{loc.name}</span>
+                <div className="map-place-actions">
+                  <button className="icon-btn" onClick={() => move(i, -1)} aria-label="Sposta su" title="Sposta su" disabled={i === 0}><ChevronUp size={14} /></button>
+                  <button className="icon-btn" onClick={() => move(i, 1)} aria-label="Sposta giù" title="Sposta giù" disabled={i === locations.length - 1}><ChevronDown size={14} /></button>
+                  <button className="icon-btn" onClick={() => remove(i)} aria-label="Rimuovi luogo" title="Rimuovi"><X size={14} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

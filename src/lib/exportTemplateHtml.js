@@ -74,6 +74,22 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
   .flight-route-row { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
   .flight-route-row .arrow { color: var(--muted); }
   .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
+  .map-frame { margin-bottom: 44px; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; box-shadow: 0 12px 28px rgba(34,48,59,0.1); break-inside: avoid; }
+  .map-frame svg { display: block; width: 100%; height: auto; }
+  .tm-root {
+    --map-sea: #E7EFEE;
+    --map-land: #F6F1E6;
+    --map-coast: rgba(96,110,95,0.4);
+    --map-route: #C9A24B;
+    --map-route-casing: rgba(201,162,75,0.28);
+    --map-marker-ring: #C9A24B;
+    --map-marker-bg: #FFFFFF;
+    --map-marker-text: #22303B;
+    --map-label: #22303B;
+    --map-line-w: 3;
+    --map-marker-r: 10;
+    font-family: 'IBM Plex Mono', monospace;
+  }
   footer { border-top: 1px solid var(--rule); margin-top: 50px; padding-top: 18px; text-align: center; }
   footer p { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
   @media (max-width: 940px) {
@@ -108,6 +124,7 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
       </div>
     </div>
     <div class="wrap">
+      {{MAP}}
       {{STYLE_BREAKDOWN}}
       {{FLIGHTS}}
       <p class="section-label">Programma</p>

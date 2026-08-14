@@ -11,6 +11,8 @@
 //
 // Deve restare JS puro (niente React/DOM): gira anche dentro la funzione Netlify.
 
+import { routePointsFromList, buildTravelMapSvg } from "./travelMap.js";
+
 export const CATEGORIES = [
   { id: "citta", label: "Città", color: "#2F6F6B" },
   { id: "mare", label: "Mare", color: "#1F86A8" },
@@ -27,6 +29,7 @@ export const EXTRA_META = [
   { id: "packing", label: "Cosa portare", color: "#B98B3E" },
   { id: "costs", label: "Costi", color: "#4A7A5E" },
   { id: "notes", label: "Note", color: "#7C6FDB" },
+  { id: "map", label: "Mappa", color: "#3A7D6E" },
 ];
 export const DEFAULT_EXTRA_META = { label: "Scheda", color: "#7A7566" };
 
@@ -164,7 +167,7 @@ export function buildParts({ tripTitle, days, extras, coverImageUrl, categories 
         </div>`;
     }).join("");
 
-  const infoCards = (extras || []).filter((extra) => extra.type !== "flight").map((extra) => {
+  const infoCards = (extras || []).filter((extra) => extra.type !== "flight" && extra.type !== "map").map((extra) => {
     const meta = EXTRA_META.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
     const iconSvg = EXPORT_ICON_SVGS[extra.type] || EXPORT_ICON_DEFAULT;
     const isPacking = extra.type === "packing";
@@ -199,11 +202,27 @@ export function buildParts({ tripTitle, days, extras, coverImageUrl, categories 
     ? `background-image: linear-gradient(180deg, rgba(15,26,33,.1) 40%, rgba(15,26,33,.82)), url('${escapeHtml(coverImageUrl)}'); background-size: cover; background-position: center;`
     : `background: linear-gradient(135deg, #1F3A4D 0%, #2E6F8E 100%);`;
 
+  // Sezione "Percorso": presente solo quando l'utente ha aggiunto la scheda Mappa.
+  // La mappa è SVG inline generato dai luoghi della scheda: nessuna richiesta
+  // esterna quando l'HTML viene aperto.
+  const mapExtra = (extras || []).find((extra) => extra.type === "map");
+  const mapSection = mapExtra
+    ? (() => {
+        const points = routePointsFromList(mapExtra.locations || []);
+        if (!points.markers.length) {
+          return `<p class="section-label">Percorso</p><p class="muted">Aggiungi i luoghi alla scheda Mappa per vedere il percorso.</p>`;
+        }
+        const svg = buildTravelMapSvg(points, { title: tripTitle || "" });
+        return `<p class="section-label">Percorso</p><div class="map-frame">${svg}</div>`;
+      })()
+    : "";
+
   return {
     title: tripTitle || "Il mio viaggio",
     coverStyle,
     coverSub: dateRangeLabel ? `<p class="cover-sub">${dateRangeLabel}</p>` : "",
     styleBreakdown: categoryBreakdownBlock,
+    map: mapSection,
     flights: flightCardHtml ? `<div class="info-stack flight-top">${flightCardHtml}</div>` : "",
     days: dayBlocks || '<p class="muted">Nessuna giornata pianificata.</p>',
     extras: infoCards ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-stack">${infoCards}</div>` : "",
@@ -220,6 +239,7 @@ export function renderExportTemplate(template, parts) {
   html = insert(html, "{{COVER_STYLE}}", parts.coverStyle);
   html = insert(html, "{{COVER_SUB}}", parts.coverSub);
   html = insert(html, "{{STYLE_BREAKDOWN}}", parts.styleBreakdown);
+  html = insert(html, "{{MAP}}", parts.map);
   html = insert(html, "{{FLIGHTS}}", parts.flights);
   html = insert(html, "{{DAYS}}", parts.days);
   html = insert(html, "{{EXTRAS}}", parts.extras);
