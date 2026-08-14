@@ -9,8 +9,8 @@
 //   GET ?id=<tripId>  -> HTML dell'itinerario (pubblico, senza autenticazione)
 
 import { neon } from "@netlify/neon";
-import { readFileSync } from "node:fs";
 import { buildParts, renderExportTemplate } from "../../src/lib/exportTemplate.js";
+import { EXPORT_TEMPLATE } from "../../src/lib/exportTemplateHtml.js";
 
 function json(statusCode, body) {
   return {
@@ -57,16 +57,9 @@ function tripIdFromEvent(event) {
   return "";
 }
 
-// Il template HTML (modificabile dal designer) vive in exportTemplate.html accanto a questa
-// funzione: Netlify copia nel pacchetto tutti i file della cartella della funzione.
-const EXPORT_TEMPLATE = (() => {
-  try {
-    return readFileSync(new URL("./exportTemplate.html", import.meta.url), "utf8");
-  } catch (err) {
-    console.error("Template export non trovato:", err.message);
-    return "";
-  }
-})();
+// Il template HTML (modificabile) vive in src/lib/exportTemplateHtml.js:
+// è importato come modulo JS perché Netlify (esbuild) impacchetta solo i
+// moduli importati — un file .html letto a runtime non arriverebbe sul server.
 
 export async function handler(event) {
   if (event.httpMethod !== "GET") return json(405, { error: "Metodo non supportato" });
@@ -91,8 +84,6 @@ export async function handler(event) {
     if (!rows.length) return htmlDoc(404, NOT_FOUND_HTML);
 
     const data = JSON.parse(rows[0].value);
-    if (!EXPORT_TEMPLATE) return json(500, { error: "Template export non trovato" });
-
     const parts = buildParts({
       tripTitle: data.tripTitle || "Il mio viaggio",
       days: data.days || {},

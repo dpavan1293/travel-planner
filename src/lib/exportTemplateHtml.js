@@ -1,4 +1,11 @@
-<!DOCTYPE html>
+// Guscio HTML/CSS dell'export di viaggio.
+//
+// Sta in un modulo JS e viene importato dalla funzione serverless export.js:
+// Netlify impacchetta con esbuild solo i moduli importati, quindi un file .html
+// letto a runtime con readFileSync non arriverebbe mai sul server. Il template
+// è comunque facilmente modificabile da qui, una stringa per volta.
+
+export const EXPORT_TEMPLATE = `<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -112,4 +119,4 @@
     </div>
   </div>
 </body>
-</html>
+</html>`;

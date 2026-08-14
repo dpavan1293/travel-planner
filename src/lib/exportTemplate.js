@@ -1,7 +1,8 @@
 // Logica JS per l'HTML di export di un viaggio.
 //
-// Il guscio HTML/CSS vive nel file separato netlify/functions/exportTemplate.html
-// e può essere modificato liberamente da un designer: qui restano solo i dati condivisi
+// Il guscio HTML/CSS vive in src/lib/exportTemplateHtml.js (come stringa, perché la
+// funzione serverless è impacchettata da esbuild che include solo i moduli importati)
+// e può essere modificato liberamente: qui restano solo i dati condivisi
 // e le funzioni che generano le parti dinamiche del documento.
 //
 // Uso:
@@ -60,8 +61,9 @@ const CATEGORY_ICON_SVGS = {
   avventura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></svg>',
 };
 
-// Genera le parti dinamiche del documento. Il guscio HTML/CSS resta in exportTemplate.html:
-// le parti restituite vengono sostituite ai segnaposto {{...}} dal renderExportTemplate.
+// Genera le parti dinamiche del documento. Il guscio HTML/CSS resta in
+// src/lib/exportTemplateHtml.js: le parti restituite vengono sostituite ai
+// segnaposto {{...}} dal renderExportTemplate.
 export function buildParts({ tripTitle, days, extras, coverImageUrl, categories = CATEGORIES }) {
   const sortedDayEntries = Object.entries(days || {}).sort(([a], [b]) => (a < b ? -1 : 1));
 
