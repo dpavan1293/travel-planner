@@ -3,6 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# Export pubblico: /export/<tripId> serve l'itinerario come pagina HTML (funzione serverless)
+# prima del catch-all SPA, così non finisce dentro l'app React.
+[[redirects]]
+  from = "/export/*"
+  to = "/.netlify/functions/export?id=:splat"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

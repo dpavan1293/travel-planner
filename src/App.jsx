@@ -3,55 +3,29 @@ import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
 import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2 } from "lucide-react";
+import {
+  CATEGORIES,
+  EXTRA_META,
+  DEFAULT_EXTRA_META as DEFAULT_EXTRA_META_BASE,
+  MONTHS,
+  WEEKDAYS,
+  WEEKDAYS_SHORT,
+  toISO,
+  fromISO,
+} from "./lib/exportTemplate";
 
-const CATEGORIES = [
-  { id: "citta", label: "Città", color: "#2F6F6B" },
-  { id: "mare", label: "Mare", color: "#1F86A8" },
-  { id: "cultura", label: "Cultura", color: "#6B4F8A" },
-  { id: "animali", label: "Animali", color: "#6B8E4E" },
-  { id: "trasferimento", label: "Trasferimento", color: "#7A7566" },
-  { id: "avventura", label: "Avventura", color: "#C1503C" },
-];
-
-const EXTRA_TYPES = [
-  { id: "flight", label: "Volo", icon: Plane, color: "#2E6F8E" },
-  { id: "security", label: "Sicurezza", icon: ShieldCheck, color: "#C1503C" },
-  { id: "vaccines", label: "Vaccinazioni", icon: Syringe, color: "#3F7D4A" },
-  { id: "packing", label: "Cosa portare", icon: Luggage, color: "#B98B3E" },
-  { id: "costs", label: "Costi", icon: Receipt, color: "#4A7A5E" },
-  { id: "notes", label: "Note", icon: StickyNote, color: "#7C6FDB" },
-];
-const DEFAULT_EXTRA_META = { label: "Scheda", icon: FileText, color: "#7A7566" };
-
-// Icone SVG (stroke, 24x24) usate nel documento HTML esportato — non possiamo usare i componenti
-// lucide-react lì dentro perché è markup statico, quindi ne teniamo una versione disegnata a mano per tipo.
-const EXPORT_ICON_SVGS = {
-  flight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>',
-  security: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
-  vaccines: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
-  packing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
-  costs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>',
-  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5"/><path d="M8 12h8M8 16h5"/></svg>',
+// EXTRA_TYPES aggiunge l'icona lucide-react (usata solo nella UI) ai dati condivisi.
+const EXTRA_ICONS = {
+  flight: Plane,
+  security: ShieldCheck,
+  vaccines: Syringe,
+  packing: Luggage,
+  costs: Receipt,
+  notes: StickyNote,
 };
-const EXPORT_ICON_DEFAULT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4V3z"/></svg>';
+const EXTRA_TYPES = EXTRA_META.map((m) => ({ ...m, icon: EXTRA_ICONS[m.id] }));
+const DEFAULT_EXTRA_META = { ...DEFAULT_EXTRA_META_BASE, icon: FileText };
 
-// Icone dedicate per le categorie di viaggio, usate nell'infografica "Stile del viaggio" dell'export.
-const CATEGORY_ICON_SVGS = {
-  citta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 21v-4h6v4"/><path d="M9 7h.01M9 11h.01M15 7h.01M15 11h.01"/></svg>',
-  mare: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0 3 1.5 4.5 0"/><path d="M2 15c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0 3-1.5 4.5 0 3 1.5 4.5 0"/></svg>',
-  cultura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10M9 21V10M15 21V10M19 21V10"/><path d="M2 10l10-6 10 6"/></svg>',
-  animali: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="9" r="1.6"/><circle cx="12" cy="6.5" r="1.6"/><circle cx="17" cy="9" r="1.6"/><path d="M12 12c-3 0-5 2-5 4.2 0 1.6 1.3 2.8 2.9 2.6.9-.1 1.4-.6 2.1-.6s1.2.5 2.1.6c1.6.2 2.9-1 2.9-2.6 0-2.2-2-4.2-5-4.2z"/></svg>',
-  trasferimento: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a4 4 0 0 0 4-4 4 4 0 0 0-4-4H9a4 4 0 0 1-4-4 4 4 0 0 1 4-4h7"/></svg>',
-  avventura: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-2 6-6 2 2-6z"/></svg>',
-};
-
-const MONTHS = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
-const WEEKDAYS = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
-const WEEKDAYS_SHORT = ["lun","mar","mer","gio","ven","sab","dom"];
-
-function pad(n) { return String(n).padStart(2, "0"); }
-function toISO(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
-function fromISO(iso) { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); }
 function uid() { return Math.random().toString(36).slice(2, 10); }
 function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
 function formatShortDate(ts) {
@@ -228,7 +202,8 @@ const SHARED_STYLES = `
   .cal-dots { position: absolute; bottom: 3px; display: flex; gap: 2px; }
   .cal-dot-mini { width: 4px; height: 4px; border-radius: 50%; box-shadow: 0 0 4px currentColor; }
 
-  .range-zone { margin-top: 14px; }
+  .range-zone {  margin-top: 14px; }
+  #spostamento { display:none}
   .range-form { border: 1px solid var(--glass-border); background: rgba(255,255,255,0.2); border-radius: 16px; padding: 14px; }
   .range-form-row { display: flex; gap: 12px; margin-bottom: 12px; }
   .range-form-row > div { flex: 1; }
@@ -237,7 +212,14 @@ const SHARED_STYLES = `
   .day-editor { border-top: 1px solid var(--glass-border); margin-top: 16px; padding-top: 16px; }
   .day-editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
   .day-editor-head-actions { display: flex; align-items: center; gap: 4px; }
-  .day-editor-date { font-family: var(--font-mono); font-size: 13px; color: var(--muted); flex: 1; text-align: center; }
+  .day-editor-center { flex: 1; text-align: center; min-width: 0; }
+  .day-editor-step { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600; color: var(--accent); margin: 0 0 2px; }
+  .day-editor-date { font-family: var(--font-display); font-size: 15.5px; font-weight: 650; color: var(--ink); margin: 0; line-height: 1.2; }
+  .day-editor-slide { animation: daySlideNext .3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+  .day-editor-slide.slide-prev { animation-name: daySlidePrev; }
+  @keyframes daySlideNext { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes daySlidePrev { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: translateX(0); } }
+  @media (prefers-reduced-motion: reduce) { .day-editor-slide { animation: none; } }
   .icon-btn {
     border: 1px solid transparent; background: transparent; cursor: pointer; color: var(--muted);
     display: flex; align-items: center; padding: 5px; border-radius: 8px;
@@ -321,7 +303,7 @@ const SHARED_STYLES = `
   }
   .add-extra-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
   .extra-menu {
-    position: absolute; top: calc(100% + 6px); left: 0; background: rgba(255,255,255,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    position: absolute; top: calc(100% + 6px); left: 0; background: rgba(255,255,255); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border); border-radius: 14px; box-shadow: 0 10px 28px rgba(15,30,45,0.18); z-index: 5; min-width: 170px; overflow: hidden;
   }
   .extra-menu button {
@@ -367,6 +349,15 @@ const SHARED_STYLES = `
   .flight-card-footer { display: flex; justify-content: flex-end; margin-top: 8px; }
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
+  .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 16px; }
+  .loading-wrap .empty-hint { padding: 0; }
+  .spinner {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 3px solid rgba(46,111,142,0.18);
+    border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .error-banner {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -457,7 +448,7 @@ const SHARED_STYLES = `
     .launcher-title { font-size: 34px; }
     .launcher-sub { margin-bottom: 18px; }
     .launcher-hero { gap: 16px; }
-    .launcher-toucan { width: 120px; }
+    .launcher-toucan { width: 30%; }
   }
 
   @media (max-width: 390px) {
@@ -672,7 +663,12 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
           </div>
         ) : (
           <>
-            {view === "loading" && <p className="empty-hint">Caricamento...</p>}
+            {view === "loading" && (
+              <div className="loading-wrap">
+                <span className="spinner" aria-hidden="true"></span>
+                <p className="empty-hint">Caricamento dei tuoi viaggi...</p>
+              </div>
+            )}
             {view === "launcher" && (
               <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} user={user} onLogout={onLogout} />
             )}
@@ -712,7 +708,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, user, on
       <div className="launcher-hero">
         <img className="launcher-toucan" src={toucanImage} alt="Tucano" />
         <div className="launcher-copy">
-          <p className="tp-eyebrow" style={{ marginBottom: 10 }}>TucanoPlanner</p>
+          <p className="tp-eyebrow" style={{ marginBottom: 10 }}>TRAVEL PLANNER</p>
           <h1 className="launcher-title">TucanoPlanner</h1>
           <p className="launcher-sub">
             {trips.length === 0 ? "Dai un nome al tuo primo viaggio per iniziare." : "Scegli un viaggio da continuare a pianificare o creane uno nuovo."}
@@ -799,6 +795,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const dayEditorRef = useRef(null);
   const scrollOnSelectRef = useRef(false);
+  const [daySlideDir, setDaySlideDir] = useState("next");
 
   useEffect(() => {
     if (selectedDate && scrollOnSelectRef.current && dayEditorRef.current) {
@@ -807,7 +804,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     scrollOnSelectRef.current = false;
   }, [selectedDate]);
   const [showExtraMenu, setShowExtraMenu] = useState(false);
-  const [showRangeForm, setShowRangeForm] = useState(false);
+  const [showRangeForm, setShowRangeForm] = useState(true);
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
   const [showShiftForm, setShowShiftForm] = useState(false);
@@ -836,12 +833,21 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
               };
             });
             setDays(fillGaps(migrated));
-            const isoKeys = Object.keys(migrated);
+            const isoKeys = Object.keys(migrated).sort();
             if (isoKeys.length) {
-              const earliest = isoKeys.sort()[0];
+              const earliest = isoKeys[0];
+              const latest = isoKeys[isoKeys.length - 1];
               const startDate = fromISO(earliest);
               setCurrentMonth(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
+              // Date già esistenti: preselezionate in "Dal"/"Al" e scheda nascosta.
+              setRangeStart(earliest);
+              setRangeEnd(latest);
+              setShowRangeForm(false);
+            } else {
+              setShowRangeForm(true);
             }
+          } else {
+            setShowRangeForm(true);
           }
           if (data.extras) {
             const migratedExtras = data.extras.map((e) =>
@@ -877,10 +883,9 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const today = new Date();
 
   const openDay = (iso) => {
-    setDays((prev) => {
-      if (prev[iso]) return prev;
-      return fillGaps({ ...prev, [iso]: emptyDay() });
-    });
+    // Le nuove date si creano solo tramite "Crea più giorni insieme" (Dal/Al):
+    // qui si possono solo aprire le giornate già esistenti, per evitare aggiunte involontarie.
+    if (!days[iso]) return;
     setSelectedDate(iso);
   };
 
@@ -889,7 +894,9 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     const next = fromISO(selectedDate);
     next.setDate(next.getDate() + delta);
     const nextIso = toISO(next);
-    setDays((prev) => (prev[nextIso] ? prev : fillGaps({ ...prev, [nextIso]: emptyDay() })));
+    // Niente creazione automatica: si naviga solo tra date già esistenti.
+    if (!days[nextIso]) return;
+    setDaySlideDir(delta > 0 ? "next" : "prev");
     setSelectedDate(nextIso);
     setCurrentMonth(new Date(next.getFullYear(), next.getMonth(), 1));
   };
@@ -925,11 +932,15 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     if (selectedDate === isoToRemove) setSelectedDate(null);
   };
 
-  const createRange = () => {
-    if (!rangeStart || !rangeEnd) return;
-    let start = fromISO(rangeStart);
-    let end = fromISO(rangeEnd);
-    if (start > end) { const tmp = start; start = end; end = tmp; }
+  const presetRangeFromDays = () => {
+    const keys = Object.keys(days).sort();
+    if (keys.length) {
+      setRangeStart(keys[0]);
+      setRangeEnd(keys[keys.length - 1]);
+    }
+  };
+
+  const mergeRange = (start, end) => {
     setDays((prev) => {
       const next = { ...prev };
       const cur = new Date(start);
@@ -940,10 +951,62 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       }
       return fillGaps(next);
     });
+  };
+
+  const shiftDaysBy = (deltaDays) => {
+    setDays((prev) => {
+      const next = {};
+      Object.entries(prev).forEach(([iso, entry]) => {
+        const d = fromISO(iso);
+        d.setDate(d.getDate() + deltaDays);
+        next[toISO(d)] = entry;
+      });
+      return next;
+    });
+  };
+
+  const createRange = () => {
+    if (!rangeStart || !rangeEnd) return;
+    let start = fromISO(rangeStart);
+    let end = fromISO(rangeEnd);
+    if (start > end) { const tmp = start; start = end; end = tmp; }
+
+    const keys = Object.keys(days).sort();
+    let newStartIso = toISO(start);
+    let newEndIso = toISO(end);
+
+    if (keys.length) {
+      const oldStart = fromISO(keys[0]);
+      const oldEnd = fromISO(keys[keys.length - 1]);
+      const hasOverlap = start <= oldEnd && end >= oldStart;
+
+      if (!hasOverlap) {
+        // Le nuove date non hanno alcun giorno in comune con quelle esistenti:
+        // l'intenzione è spostare l'intero viaggio sulle nuove date (come "Sposta le date").
+        const deltaDays = Math.round((start - oldStart) / 86400000);
+        shiftDaysBy(deltaDays);
+        const shiftedStart = new Date(oldStart);
+        shiftedStart.setDate(shiftedStart.getDate() + deltaDays);
+        const shiftedEnd = new Date(oldEnd);
+        shiftedEnd.setDate(shiftedEnd.getDate() + deltaDays);
+        newStartIso = toISO(shiftedStart);
+        newEndIso = toISO(shiftedEnd);
+      } else {
+        // Sovrapposizione con le date esistenti: estendi/aggiungi normalmente.
+        mergeRange(start, end);
+        const actualStart = start < oldStart ? start : oldStart;
+        const actualEnd = end > oldEnd ? end : oldEnd;
+        newStartIso = toISO(actualStart);
+        newEndIso = toISO(actualEnd);
+      }
+    } else {
+      mergeRange(start, end);
+    }
+
+    setRangeStart(newStartIso);
+    setRangeEnd(newEndIso);
     setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
     setShowRangeForm(false);
-    setRangeStart("");
-    setRangeEnd("");
   };
 
   const shiftTripDates = () => {
@@ -954,15 +1017,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     const newStart = fromISO(shiftNewStart);
     const deltaDays = Math.round((newStart - oldStart) / 86400000);
     if (deltaDays !== 0) {
-      setDays((prev) => {
-        const next = {};
-        Object.entries(prev).forEach(([iso, entry]) => {
-          const d = fromISO(iso);
-          d.setDate(d.getDate() + deltaDays);
-          next[toISO(d)] = entry;
-        });
-        return next;
-      });
+      shiftDaysBy(deltaDays);
       setCurrentMonth(new Date(newStart.getFullYear(), newStart.getMonth(), 1));
       setSelectedDate(null);
     }
@@ -987,267 +1042,11 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
   const sortedDayEntries = Object.entries(days).sort(([a], [b]) => (a < b ? -1 : 1));
 
-  const escapeHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
   const exportItinerary = () => {
-    let dateRangeLabel = "";
-    if (sortedDayEntries.length) {
-      const firstIso = sortedDayEntries[0][0];
-      const lastIso = sortedDayEntries[sortedDayEntries.length - 1][0];
-      const fd = fromISO(firstIso), ld = fromISO(lastIso);
-      const nDays = sortedDayEntries.length;
-      const dayLabel = nDays === 1 ? "1 giorno" : `${nDays} giorni`;
-      const sameMonth = fd.getMonth() === ld.getMonth() && fd.getFullYear() === ld.getFullYear();
-      if (firstIso === lastIso) {
-        dateRangeLabel = `${fd.getDate()} ${MONTHS[fd.getMonth()].toLowerCase()} ${fd.getFullYear()} · ${dayLabel}`;
-      } else if (sameMonth) {
-        dateRangeLabel = `${fd.getDate()} – ${ld.getDate()} ${MONTHS[fd.getMonth()].toLowerCase()} ${fd.getFullYear()} · ${dayLabel}`;
-      } else {
-        dateRangeLabel = `${fd.getDate()} ${MONTHS[fd.getMonth()].slice(0, 3).toLowerCase()} – ${ld.getDate()} ${MONTHS[ld.getMonth()].slice(0, 3).toLowerCase()} ${ld.getFullYear()} · ${dayLabel}`;
-      }
-    }
-
-    const dayBlocks = sortedDayEntries.map(([iso, entry], i) => {
-      const d = fromISO(iso);
-      const cats = (entry.categories || []).map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean);
-      const accent = cats[0] ? cats[0].color : "#2E6F8E";
-      const activities = entry.activities.filter((a) => a.trim());
-      const hasImage = !!entry.image;
-      const imgSide = i % 2 === 0 ? "img-right" : "img-left";
-      return `
-        <div class="tl-item">
-          <div class="tl-rail">
-            <div class="tl-node" style="background:${accent}"></div>
-            <div class="tl-line"></div>
-          </div>
-          <div class="tl-content ${hasImage ? `has-image ${imgSide}` : ""}">
-            <div class="tl-text">
-              <p class="tl-date" style="color:${accent}">${WEEKDAYS[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTHS[d.getMonth()].toLowerCase()} · Giorno ${i + 1}</p>
-              ${entry.place ? `<h3>${escapeHtml(entry.place)}</h3>` : ""}
-              ${cats.length ? `<div class="tags">${cats.map((c) => `<span class="tag" style="background:${c.color}1A;color:${c.color}">${escapeHtml(c.label)}</span>`).join("")}</div>` : ""}
-              ${activities.length ? `<ul class="acts">${activities.map((a) => `<li>${escapeHtml(a)}</li>`).join("")}</ul>` : `<p class="muted">Nessuna attività in programma</p>`}
-              ${entry.accommodation ? `<p class="stay">🌙&nbsp; ${escapeHtml(entry.accommodation)}</p>` : ""}
-            </div>
-            ${hasImage ? `<div class="tl-image"><img src="${escapeHtml(entry.image)}" alt="${escapeHtml(entry.place || "")}" onerror="this.parentElement.style.display='none'"></div>` : ""}
-          </div>
-        </div>`;
-    }).join("");
-
-    const categoryCounts = {};
-    sortedDayEntries.forEach(([, entry]) => {
-      (entry.categories || []).forEach((cid) => {
-        categoryCounts[cid] = (categoryCounts[cid] || 0) + 1;
-      });
-    });
-    const totalCategoryTags = Object.values(categoryCounts).reduce((a, b) => a + b, 0);
-    const categoryBreakdown = Object.entries(categoryCounts)
-      .map(([cid, count]) => {
-        const cat = allCategories.find((c) => c.id === cid);
-        if (!cat) return null;
-        return { id: cid, label: cat.label, color: cat.color, pct: Math.round((count / totalCategoryTags) * 100) };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.pct - a.pct);
-
-    const categoryBreakdownBlock = categoryBreakdown.length
-      ? `
-    <p class="section-label">Stile del viaggio</p>
-    <div class="cat-breakdown">
-      ${categoryBreakdown.map((c) => `
-        <div class="cat-row-item">
-          <span class="cat-row-icon" style="color:${c.color}">${CATEGORY_ICON_SVGS[c.id] || EXPORT_ICON_DEFAULT}</span>
-          <span class="cat-row-label">${escapeHtml(c.label)}</span>
-          <div class="cat-row-bar"><span style="width:${c.pct}%;background:${c.color}"></span></div>
-          <span class="cat-row-pct">${c.pct}%</span>
-        </div>`).join("")}
-    </div>`
-      : "";
-
-    const flightCardHtml = extras
-      .filter((extra) => extra.type === "flight")
-      .map((extra) => {
-        const meta = EXTRA_TYPES.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
-        const iconSvg = EXPORT_ICON_SVGS.flight || EXPORT_ICON_DEFAULT;
-        const flights = (extra.flights || []).filter((f) => f.number || f.airline || f.depCity || f.arrCity);
-        return `
-          <div class="info-card flight-card">
-            <div class="info-card-head">
-              <span class="info-icon" style="color:${meta.color}">${iconSvg}</span>
-              <p class="info-card-title">${escapeHtml(extra.title)}</p>
-            </div>
-            ${flights.length ? flights.map((f) => `
-              <div class="flight-row">
-                <p class="flight-meta">${[escapeHtml(f.number), escapeHtml(f.airline)].filter(Boolean).join(" · ") || "Volo"}</p>
-                <div class="flight-route-row">
-                  <span><strong>${escapeHtml(f.depCity) || "—"}</strong>${f.depTime ? ` ${escapeHtml(f.depTime)}` : ""}</span>
-                  <span class="arrow">→</span>
-                  <span><strong>${escapeHtml(f.arrCity) || "—"}</strong>${f.arrTime ? ` ${escapeHtml(f.arrTime)}` : ""}</span>
-                </div>
-              </div>`).join("") : `<p class="muted">Nessun volo inserito</p>`}
-          </div>`;
-      }).join("");
-
-    const infoCards = extras.filter((extra) => extra.type !== "flight").map((extra) => {
-      const meta = EXTRA_TYPES.find((t) => t.id === extra.type) || DEFAULT_EXTRA_META;
-      const iconSvg = EXPORT_ICON_SVGS[extra.type] || EXPORT_ICON_DEFAULT;
-      const isPacking = extra.type === "packing";
-      const isCosts = extra.type === "costs";
-      const cardHead = `
-        <div class="info-card-head">
-          <span class="info-icon" style="color:${meta.color}">${iconSvg}</span>
-          <p class="info-card-title">${escapeHtml(extra.title)}</p>
-        </div>`;
-
-      if (isCosts) {
-        const rows = extra.lines.filter((l) => (l.desc || "").trim() || (l.value || "").trim());
-        const total = rows.reduce((sum, l) => sum + (parseFloat(String(l.value).replace(",", ".")) || 0), 0);
-        const fmt = (n) => new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
-        return `
-          <div class="info-card cost-card">
-            ${cardHead}
-            ${rows.length ? `<table class="cost-table">${rows.map((l) => `<tr><td>${escapeHtml(l.desc)}</td><td class="val">${fmt(parseFloat(String(l.value).replace(",", ".")) || 0)}</td></tr>`).join("")}</table>` : `<p class="muted">Nessuna voce</p>`}
-            <div class="cost-total"><span>Totale</span><span>${fmt(total)}</span></div>
-          </div>`;
-      }
-
-      const lines = extra.lines.filter((l) => l.text.trim());
-      return `
-        <div class="info-card">
-          ${cardHead}
-          ${lines.length ? `<ul class="acts">${lines.map((l) => `<li>${isPacking ? (l.done ? "☑ " : "☐ ") : ""}${escapeHtml(l.text)}</li>`).join("")}</ul>` : `<p class="muted">Nessuna voce</p>`}
-        </div>`;
-    }).join("");
-
-    const coverStyle = coverImageUrl
-      ? `background-image: linear-gradient(180deg, rgba(15,26,33,.1) 40%, rgba(15,26,33,.82)), url('${escapeHtml(coverImageUrl)}'); background-size: cover; background-position: center;`
-      : `background: linear-gradient(135deg, #1F3A4D 0%, #2E6F8E 100%);`;
-
-    const html = `<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(tripTitle || "Itinerario")}</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
-  :root { --paper: #FBF9F4; --ink: #22303B; --muted: #7A7B72; --gold: #C9A24B; --rule: #E7E2D6; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; color: var(--ink); background: #DEDAD0; margin: 0; }
-  .sheet { max-width: 880px; margin: 44px auto; background: var(--paper); box-shadow: 0 30px 70px rgba(20,20,15,0.2); overflow: hidden; }
-  .cover {
-    ${coverStyle}
-    min-height: 340px; display: flex; align-items: flex-end; padding: 48px 48px 40px;
-  }
-  .cover-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin: 0 0 10px; }
-  .cover h1 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 42px; color: #fff; margin: 0 0 8px; line-height: 1.1; }
-  .cover-sub { font-family: 'Inter', sans-serif; font-size: 14px; color: rgba(255,255,255,0.88); margin: 0; letter-spacing: .01em; }
-  .wrap { padding: 44px 48px 70px; }
-  .section-label { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 26px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
-  .timeline { margin-bottom: 46px; }
-  .tl-item { display: flex; gap: 22px; margin-bottom: 30px; break-inside: avoid; }
-  .tl-rail { width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; }
-  .tl-node { width: 13px; height: 13px; border-radius: 50%; box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px var(--rule); margin-top: 5px; flex-shrink: 0; }
-  .tl-line { width: 2px; flex: 1; background: var(--rule); margin-top: 6px; }
-  .tl-item:last-child .tl-line { display: none; }
-  .tl-content { flex: 1; padding-bottom: 4px; }
-  .tl-content.has-image { display: flex; gap: 22px; align-items: flex-start; }
-  .tl-content.has-image.img-left { flex-direction: row-reverse; }
-  .tl-text { flex: 1; min-width: 0; }
-  .tl-image { width: 190px; flex-shrink: 0; }
-  .tl-image img { width: 100%; height: 132px; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 24px rgba(34,48,59,0.16); display: block; }
-  .tl-date { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px; }
-  .tl-text h3 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin: 0 0 8px; color: var(--ink); }
-  .tags { margin-bottom: 8px; }
-  .tag { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin: 0 5px 5px 0; }
-  .acts { margin: 6px 0 0; padding: 0; list-style: none; }
-  .acts li { position: relative; padding-left: 17px; margin-bottom: 6px; font-size: 14px; line-height: 1.5; }
-  .acts li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
-  .stay { display: inline-flex; align-items: center; margin-top: 10px; padding: 7px 13px; background: rgba(31,58,77,0.06); border-radius: 10px; font-size: 13px; color: var(--ink); }
-  .muted { font-size: 13.5px; color: var(--muted); margin: 4px 0 0; }
-  .cat-breakdown { margin-bottom: 44px; display: flex; flex-direction: column; gap: 16px; }
-  .cat-row-item { display: flex; align-items: center; gap: 14px; }
-  .cat-row-icon { width: 22px; height: 22px; flex-shrink: 0; }
-  .cat-row-icon svg { width: 100%; height: 100%; }
-  .cat-row-label { width: 120px; flex-shrink: 0; font-size: 13.5px; font-weight: 500; color: var(--ink); }
-  .cat-row-bar { flex: 1; height: 7px; border-radius: 6px; background: var(--rule); overflow: hidden; }
-  .cat-row-bar span { display: block; height: 100%; }
-  .cat-row-pct { width: 38px; flex-shrink: 0; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); }
-  .info-stack { display: flex; flex-direction: column; }
-  .flight-top { margin-bottom: 44px; }
-  .info-card {
-    padding: 28px 4px; border-bottom: 1px solid var(--rule); break-inside: avoid;
-  }
-  .info-stack .info-card:last-child { border-bottom: none; }
-  .info-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .info-icon { width: 24px; height: 24px; flex-shrink: 0; }
-  .info-icon svg { width: 100%; height: 100%; }
-  .info-card-title { font-family: 'Fraunces', serif; font-size: 16.5px; font-weight: 600; margin: 0; color: var(--ink); }
-  .cost-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  .cost-table td { padding: 6px 0; border-bottom: 1px solid #F1EFE6; }
-  .cost-table td.val { text-align: right; white-space: nowrap; padding-left: 12px; }
-  .flight-card .info-card-head { justify-content: center; }
-  .flight-row { padding: 14px 0; border-bottom: 1px solid #F1EFE6; text-align: center; }
-  .flight-row:last-child { border-bottom: none; }
-  .flight-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--muted); margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; }
-  .flight-route-row { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .flight-route-row .arrow { color: var(--muted); }
-  .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
-  footer { border-top: 1px solid var(--rule); margin-top: 50px; padding-top: 18px; text-align: center; }
-  footer p { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
-  @media (max-width: 940px) {
-    body { background: var(--paper); }
-    .sheet { margin: 0; box-shadow: none; max-width: none; }
-  }
-  @media (max-width: 620px) {
-    .cover { padding: 34px 26px 30px; min-height: 260px; }
-    .cover h1 { font-size: 30px; }
-    .wrap { padding: 32px 22px 50px; }
-    .tl-content.has-image, .tl-content.has-image.img-left { flex-direction: column; }
-    .tl-image { width: 100%; }
-    .tl-image img { height: 170px; }
-    .cat-row-label { width: 90px; font-size: 12.5px; }
-    .info-card { padding: 22px 0; }
-  }
-  @media print {
-    body { background: #fff; }
-    .sheet { margin: 0; box-shadow: none; max-width: none; }
-    .cover { break-after: avoid; }
-    .tl-item, .info-card { break-inside: avoid; }
-  }
-</style>
-</head>
-<body>
-  <div class="sheet">
-    <div class="cover">
-      <div>
-        <p class="cover-eyebrow">Itinerario di viaggio</p>
-        <h1>${escapeHtml(tripTitle || "Il mio viaggio")}</h1>
-        ${dateRangeLabel ? `<p class="cover-sub">${dateRangeLabel}</p>` : ""}
-      </div>
-    </div>
-    <div class="wrap">
-      ${categoryBreakdownBlock}
-      ${flightCardHtml ? `<div class="info-stack flight-top">${flightCardHtml}</div>` : ""}
-      <p class="section-label">Programma</p>
-      <div class="timeline">
-        ${dayBlocks || '<p class="muted">Nessuna giornata pianificata.</p>'}
-      </div>
-      ${infoCards ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-stack">${infoCards}</div>` : ""}
-      <footer><p>${escapeHtml(tripTitle || "Itinerario")} — documento di viaggio</p></footer>
-    </div>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(tripTitle || "itinerario").trim().replace(/[^a-z0-9\-_ ]/gi, "") || "itinerario"}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Apre l'itinerario come pagina web pubblica servita via HTTPS (/.netlify/functions/export),
+    // così le foto caricano anche su iPhone/Safari (il file .html scaricato apriva le immagini
+    // in contesto locale e Safari le bloccava).
+    window.open(`${window.location.origin}/export/${tripId}`, "_blank");
   };
 
   const [showSharePanel, setShowSharePanel] = useState(false);
@@ -1285,6 +1084,12 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
   return (
     <>
+      {!loaded && (
+        <div className="loading-wrap">
+          <span className="spinner" aria-hidden="true"></span>
+          <p className="empty-hint">Caricamento itinerario...</p>
+        </div>
+      )}
       <div className="tp-header">
         <div className="tp-header-top no-print">
           <button className="back-link" onClick={onBack}><ArrowLeft size={14} /> I tuoi viaggi</button>
@@ -1400,23 +1205,50 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
         <div className="range-zone">
           {!showRangeForm ? (
-            <button className="add-line-btn" onClick={() => setShowRangeForm(true)}>
-              <CalendarRange size={14} /> Crea più giorni insieme
+            <button
+              className="add-line-btn"
+              onClick={() => { presetRangeFromDays(); setShowRangeForm(true); }}
+            >
+              <CalendarRange size={14} /> Modifica date di Viaggio
             </button>
           ) : (
             <div className="range-form">
               <div className="range-form-row">
                 <div>
                   <p className="field-label">Dal</p>
-                  <input type="date" className="tp-input" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} />
+                  <input
+                    type="date"
+                    className="tp-input"
+                    value={rangeStart}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setRangeStart(v);
+                      // Se la data "Al" è ancora vuota la allinea a quella di partenza,
+                      // così il calendario del campo "Al" si apre già sul mese di partenza.
+                      if (!rangeEnd) setRangeEnd(v);
+                    }}
+                  />
                 </div>
                 <div>
                   <p className="field-label">Al</p>
-                  <input type="date" className="tp-input" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} />
+                  <input
+                    type="date"
+                    className="tp-input"
+                    value={rangeEnd}
+                    min={rangeStart || undefined}
+                    onChange={(e) => setRangeEnd(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="range-form-actions">
-                <button className="danger-link" onClick={() => { setShowRangeForm(false); setRangeStart(""); setRangeEnd(""); }}>Annulla</button>
+                {sortedDayEntries.length > 0 && (
+                  <button
+                    className="danger-link"
+                    onClick={() => { presetRangeFromDays(); setShowRangeForm(false); }}
+                  >
+                    Annulla
+                  </button>
+                )}
                 <button className="export-btn" onClick={createRange}>Crea giornate</button>
               </div>
             </div>
@@ -1424,7 +1256,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         </div>
 
         {sortedDayEntries.length > 0 && (
-          <div className="range-zone">
+          <div className="range-zone" id="spostamento">
             {!showShiftForm ? (
               <button
                 className="add-line-btn"
@@ -1457,6 +1289,9 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
               onClose={() => setSelectedDate(null)}
               onDelete={() => removeDay(selectedDate)}
               onNavigate={navigateDay}
+              dayIndex={sortedDayEntries.findIndex(([iso]) => iso === selectedDate)}
+              dayTotal={sortedDayEntries.length}
+              slideDir={daySlideDir}
             />
           </div>
         )}
@@ -1465,7 +1300,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       <div className="tp-card">
         <p className="tp-section-label">Itinerario</p>
         {sortedDayEntries.length === 0 ? (
-          <p className="empty-hint">Nessuna giornata ancora. Clicca una data sul calendario per iniziare.</p>
+          <p className="empty-hint">Nessuna giornata ancora. Fissa le date con "Crea più giorni insieme" per iniziare.</p>
         ) : (
           <div className="ticket-list">
             {sortedDayEntries.map(([iso, entry]) => {
@@ -1529,12 +1364,13 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   );
 }
 
-function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavigate }) {
+function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavigate, dayIndex, dayTotal, slideDir }) {
   const d = fromISO(iso);
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
   const [showDayUnsplashPicker, setShowDayUnsplashPicker] = useState(false);
   const touchStartX = useRef(null);
+  const dayNumber = dayIndex >= 0 ? dayIndex + 1 : null;
 
   const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
   const handleTouchEnd = (e) => {
@@ -1573,14 +1409,18 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
 
   return (
     <div className="day-editor" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      <div className="day-editor-head">
-        <button className="icon-btn" onClick={() => onNavigate(-1)} aria-label="Giorno precedente"><ChevronLeft size={18} /></button>
-        <span className="day-editor-date">{WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()} {MONTHS[d.getMonth()].toLowerCase()} {d.getFullYear()}</span>
-        <div className="day-editor-head-actions">
-          <button className="icon-btn" onClick={() => onNavigate(1)} aria-label="Giorno successivo"><ChevronRight size={18} /></button>
-          <button className="icon-btn" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+      <div key={`${iso}-${slideDir}`} className={`day-editor-slide slide-${slideDir}`}>
+        <div className="day-editor-head">
+          <button className="icon-btn" onClick={() => onNavigate(-1)} aria-label="Giorno precedente"><ChevronLeft size={18} /></button>
+          <div className="day-editor-center">
+            {dayNumber && dayTotal ? <p className="day-editor-step">Giorno {dayNumber} di {dayTotal}</p> : null}
+            <p className="day-editor-date">{WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()} {MONTHS[d.getMonth()].toLowerCase()} {d.getFullYear()}</p>
+          </div>
+          <div className="day-editor-head-actions">
+            <button className="icon-btn" onClick={() => onNavigate(1)} aria-label="Giorno successivo"><ChevronRight size={18} /></button>
+            <button className="icon-btn" onClick={onClose} aria-label="Chiudi"><X size={18} /></button>
+          </div>
         </div>
-      </div>
 
       <div className="field-block">
         <p className="field-label">Titolo / luogo</p>
@@ -1677,6 +1517,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
 
       <div className="day-editor-footer">
         <button className="danger-link" onClick={() => { if (window.confirm("Eliminare questa giornata dall'itinerario?")) onDelete(); }}><Trash2 size={13} /> Elimina giornata</button>
+      </div>
       </div>
     </div>
   );
