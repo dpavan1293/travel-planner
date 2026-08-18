@@ -451,20 +451,25 @@ const SHARED_STYLES = `
   }
   .map-frame { margin-top: 4px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(15,30,45,0.1); }
   .map-frame svg { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
-  .tm-root {
-    --map-sea: #DCEDF2;
-    --map-land: #F6EFE0;
-    --map-coast: rgba(46,111,142,0.25);
-    --map-route: var(--accent);
-    --map-route-casing: rgba(46,111,142,0.2);
-    --map-marker-ring: var(--accent);
-    --map-marker-bg: #FFFFFF;
-    --map-marker-text: var(--accent-dark);
-    --map-label: var(--accent-dark);
-    --map-line-w: 3;
-    --map-marker-r: 10;
-    font-family: var(--font-mono);
-  }
+.tm-root {
+  --map-sea: #D8E5E1;
+  --map-land: #EFE4D0;
+  --map-coast: rgba(87, 96, 88, 0.28);
+
+  --map-route: #B85C42;
+  --map-route-casing: rgba(255, 250, 240, 0.9);
+
+  --map-marker-ring: #B85C42;
+  --map-marker-bg: #FFF9EF;
+  --map-marker-text: #87432F;
+
+  --map-label: #4A4A42;
+
+  --map-line-w: 3;
+  --map-marker-r: 10;
+
+  font-family: var(--font-mono);
+}
   .map-places { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 12px; }
   .map-place-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
   .map-place-row {

@@ -80,13 +80,20 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
     --map-sea: #E7EFEE;
     --map-land: #F6F1E6;
     --map-coast: rgba(96,110,95,0.4);
-    --map-route: #C9A24B;
-    --map-route-casing: rgba(201,162,75,0.28);
-    --map-marker-ring: #C9A24B;
+    --map-lake: rgba(116,158,178,0.45);
+    --map-lake-label: #6B8EA6;
+    --map-border: rgba(140,124,108,0.55);
+    --map-border-disputed: rgba(176,132,92,0.6);
+    --map-city-dot: #A66F4E;
+    --map-city-label: #5C4436;
+    --map-route: #6E6F67;
+    --map-route-casing: rgba(110,111,103,0.3);
+    --map-route-dash: 12 7;
+    --map-marker-ring: #6E6F67;
     --map-marker-bg: #FFFFFF;
     --map-marker-text: #22303B;
     --map-label: #22303B;
-    --map-line-w: 3;
+    --map-line-w: 4.5;
     --map-marker-r: 10;
     font-family: 'IBM Plex Mono', monospace;
   }
