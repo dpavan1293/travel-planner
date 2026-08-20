@@ -35,6 +35,18 @@ function formatShortDate(ts) {
   return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3).toLowerCase()} ${d.getFullYear()}`;
 }
 
+function downloadJSON(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function getMonthGrid(year, month) {
   const first = new Date(year, month, 1);
   const startOffset = (first.getDay() + 6) % 7;
@@ -384,6 +396,10 @@ const SHARED_STYLES = `
   .launcher-content { width: 100%; max-width: 440px; margin: 0 auto; }
   .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
   .launcher-footer .back-link { margin: 0 auto; }
+  .data-tools { margin-top: 26px; display: flex; align-items: center; justify-content: center; gap: 18px; opacity: 0.5; transition: opacity .2s; }
+  .data-tools:hover { opacity: 0.9; }
+  .data-tool { border: none; background: none; padding: 6px; color: var(--muted); font-size: 11.5px; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; font-family: var(--font-text); }
+  .data-tool:hover { color: var(--accent-dark); }
   .launcher-title { font-family: var(--font-page-title); font-size: 42px; font-weight: 350; margin: 0 0 8px; }
   .launcher-sub { font-size: 14px; color: var(--muted); margin: 0 0 26px; }
   .create-card {
@@ -669,6 +685,10 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
     }
   };
 
+  const importTrips = (entries) => {
+    persistIndex([...entries, ...trips]);
+  };
+
   // Se si arriva da un link di condivisione (/shared/<token>), proponiamo di importare
   // una copia modificabile del viaggio sul nostro account, prima di mostrare l'elenco normale.
   const acceptShare = async () => {
@@ -748,7 +768,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
               </div>
             )}
             {view === "launcher" && (
-              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} user={user} onLogout={onLogout} />
+              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onImport={importTrips} user={user} onLogout={onLogout} />
             )}
         {view === "planner" && currentTripId && (
           <PlannerView
@@ -765,10 +785,11 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   );
 }
 
-function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, user, onLogout }) {
+function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport, user, onLogout }) {
   const [showForm, setShowForm] = useState(trips.length === 0);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (showForm && inputRef.current) inputRef.current.focus();
@@ -779,6 +800,53 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, user, on
     onCreate(name);
     setName("");
     setShowForm(false);
+  };
+
+  const exportJson = async () => {
+    const bundle = { type: "tucano-planner", version: 1, exportedAt: new Date().toISOString(), trips: [] };
+    for (const t of trips) {
+      let data = null;
+      const res = await storage.get(`trip:${t.id}`);
+      if (res && res.value) {
+        try { data = JSON.parse(res.value); } catch (e) { /* dati non validi */ }
+      }
+      bundle.trips.push({ id: t.id, title: t.title, createdAt: t.createdAt, data });
+    }
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+    downloadJSON(`tucano-planner-${stamp}.json`, bundle);
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch (err) {
+      window.alert("Impossibile importare: il file non è un JSON valido.");
+      return;
+    }
+    let items = [];
+    if (parsed && parsed.type === "tucano-planner" && Array.isArray(parsed.trips)) {
+      items = parsed.trips;
+    } else if (parsed && (parsed.tripTitle !== undefined || parsed.days)) {
+      items = [parsed];
+    }
+    if (!items.length) {
+      window.alert("File non riconosciuto: non sembra un itinerario TucanoPlanner.");
+      return;
+    }
+    const entries = [];
+    for (const item of items) {
+      const data = item.data || item;
+      const title = (data && data.tripTitle) || item.title || "Viaggio importato";
+      const id = uid();
+      await storage.set(`trip:${id}`, JSON.stringify(data || { tripTitle: title, days: {}, extras: [] }));
+      entries.push({ id, title, createdAt: Date.now() });
+    }
+    onImport(entries);
   };
 
   return (
@@ -858,6 +926,16 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, user, on
           </button>
         </div>
       )}
+
+      <div className="data-tools">
+        <button className="data-tool" onClick={exportJson} disabled={trips.length === 0}>
+          Esporta itinerari (JSON)
+        </button>
+        <label className="data-tool">
+          Importa itinerario (JSON)
+          <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} />
+        </label>
+      </div>
     </div>
   );
 }
