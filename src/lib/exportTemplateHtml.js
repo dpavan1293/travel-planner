@@ -74,29 +74,27 @@ export const EXPORT_TEMPLATE = `<!DOCTYPE html>
   .flight-route-row { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
   .flight-route-row .arrow { color: var(--muted); }
   .cost-total { display: flex; justify-content: space-between; margin-top: 12px; padding: 10px 14px; background: rgba(201,162,75,0.14); border-radius: 8px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 14.5px; }
-  .map-frame { max-width: 560px; margin: 0 auto 44px; border: 1px solid var(--rule); border-radius: 16px; overflow: hidden; box-shadow: 0 12px 28px rgba(34,48,59,0.1); break-inside: avoid; }
+  .map-frame { max-width: 560px; margin: 0 auto 44px; var(--rule); border-radius: 16px; overflow: hidden; break-inside: avoid; }
   .map-frame svg { display: block; width: 100%; height: auto; }
-  .tm-root {
-    --map-sea: #E7EFEE;
-    --map-land: #F6F1E6;
-    --map-coast: rgba(96,110,95,0.4);
-    --map-lake: rgba(116,158,178,0.45);
-    --map-lake-label: #6B8EA6;
-    --map-border: rgba(140,124,108,0.55);
-    --map-border-disputed: rgba(176,132,92,0.6);
-    --map-city-dot: #A66F4E;
-    --map-city-label: #5C4436;
-    --map-route: #6E6F67;
-    --map-route-casing: rgba(110,111,103,0.3);
-    --map-route-dash: 12 7;
-    --map-marker-ring: #6E6F67;
-    --map-marker-bg: #FFFFFF;
-    --map-marker-text: #22303B;
-    --map-label: #22303B;
-    --map-line-w: 4.5;
-    --map-marker-r: 10;
-    font-family: 'IBM Plex Mono', monospace;
-  }
+.tm-root {
+  --map-sea: #FFFFFF;
+  --map-land: #E3947C;
+  --map-coast: rgba(227, 148, 124, 0.0);
+
+  --map-route: #6E4035;
+  --map-route-casing: rgba(255, 255, 255, 0.95);
+
+  --map-marker-ring: #6E4035;
+  --map-marker-bg: #FFFFFF;
+  --map-marker-text: #6E4035;
+
+  --map-label: #4A3934;
+
+  --map-line-w: 3;
+  --map-marker-r: 10;
+
+  font-family: var(--font-mono);
+}
   footer { border-top: 1px solid var(--rule); margin-top: 50px; padding-top: 18px; text-align: center; }
   footer p { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
   @media (max-width: 940px) {

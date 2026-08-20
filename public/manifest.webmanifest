@@ -1,0 +1,20 @@
+{
+  "name": "Tucano Planner",
+  "short_name": "Tucano Planner",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf6f0",
+  "theme_color": "#faf6f0",
+  "icons": [
+    {
+      "src": "/assets/toucan_splash.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/toucan_splash.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

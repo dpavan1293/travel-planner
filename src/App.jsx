@@ -451,25 +451,27 @@ const SHARED_STYLES = `
   }
   .map-frame { margin-top: 4px; border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(15,30,45,0.1); }
   .map-frame svg { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
-.tm-root {
-  --map-sea: #D8E5E1;
-  --map-land: #EFE4D0;
-  --map-coast: rgba(87, 96, 88, 0.28);
-
-  --map-route: #B85C42;
-  --map-route-casing: rgba(255, 250, 240, 0.9);
-
-  --map-marker-ring: #B85C42;
-  --map-marker-bg: #FFF9EF;
-  --map-marker-text: #87432F;
-
-  --map-label: #4A4A42;
-
-  --map-line-w: 3;
-  --map-marker-r: 10;
-
-  font-family: var(--font-mono);
-}
+  .tm-root {
+    --map-sea: #E7EFEE;
+    --map-land: #F6F1E6;
+    --map-coast: rgba(96,110,95,0.4);
+    --map-lake: rgba(116,158,178,0.45);
+    --map-lake-label: #6B8EA6;
+    --map-border: rgba(140,124,108,0.55);
+    --map-border-disputed: rgba(176,132,92,0.6);
+    --map-city-dot: #A66F4E;
+    --map-city-label: #5C4436;
+    --map-route: #6E6F67;
+    --map-route-casing: rgba(110,111,103,0.3);
+    --map-route-dash: 12 7;
+    --map-marker-ring: #6E6F67;
+    --map-marker-bg: #FFFFFF;
+    --map-marker-text: #22303B;
+    --map-label: #22303B;
+    --map-line-w: 4.5;
+    --map-marker-r: 10;
+    font-family: 'IBM Plex Mono', monospace;
+  }
   .map-places { margin-top: 14px; border-top: 1px solid var(--glass-border); padding-top: 12px; }
   .map-place-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
   .map-place-row {
