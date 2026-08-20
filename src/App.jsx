@@ -790,6 +790,8 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
   const [name, setName] = useState("");
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [showExportPicker, setShowExportPicker] = useState(false);
+  const [exportSelection, setExportSelection] = useState([]);
 
   useEffect(() => {
     if (showForm && inputRef.current) inputRef.current.focus();
@@ -802,9 +804,16 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
     setShowForm(false);
   };
 
+  const openExportPicker = () => {
+    setExportSelection(trips.map((t) => t.id));
+    setShowExportPicker(true);
+  };
+
   const exportJson = async () => {
+    const selected = trips.filter((t) => exportSelection.includes(t.id));
+    if (!selected.length) return;
     const bundle = { type: "tucano-planner", version: 1, exportedAt: new Date().toISOString(), trips: [] };
-    for (const t of trips) {
+    for (const t of selected) {
       let data = null;
       const res = await storage.get(`trip:${t.id}`);
       if (res && res.value) {
@@ -815,6 +824,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
     const d = new Date();
     const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
     downloadJSON(`tucano-planner-${stamp}.json`, bundle);
+    setShowExportPicker(false);
   };
 
   const handleImportFile = async (e) => {
@@ -928,7 +938,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
       )}
 
       <div className="data-tools">
-        <button className="data-tool" onClick={exportJson} disabled={trips.length === 0}>
+        <button className="data-tool" onClick={openExportPicker} disabled={trips.length === 0}>
           Esporta itinerari (JSON)
         </button>
         <label className="data-tool">
@@ -936,6 +946,35 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
           <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} />
         </label>
       </div>
+
+      {showExportPicker && (
+        <div className="modal-overlay" onClick={() => setShowExportPicker(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <p className="modal-title">Esporta itinerari</p>
+              <button className="icon-btn" onClick={() => setShowExportPicker(false)} aria-label="Chiudi"><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              {trips.map((t) => {
+                const checked = exportSelection.includes(t.id);
+                return (
+                  <label
+                    key={t.id}
+                    className="check-row"
+                    style={{ padding: "8px 10px", borderRadius: 10, cursor: "pointer", background: checked ? "rgba(46,111,142,0.08)" : "transparent", marginBottom: 4 }}
+                  >
+                    <input type="checkbox" checked={checked} onChange={() => setExportSelection((prev) => (checked ? prev.filter((id) => id !== t.id) : [...prev, t.id]))} />
+                    <span style={{ flex: 1, fontSize: 14 }}>{t.title}</span>
+                  </label>
+                );
+              })}
+              <button className="export-btn" onClick={exportJson} disabled={!exportSelection.length} style={{ width: "100%", justifyContent: "center", marginTop: 14 }}>
+                Esporta ({exportSelection.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
