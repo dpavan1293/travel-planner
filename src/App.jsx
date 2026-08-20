@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
-import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon } from "lucide-react";
+import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon } from "lucide-react";
 import {
   CATEGORIES,
   EXTRA_META,
@@ -80,6 +80,63 @@ function fillGaps(daysObj) {
 const emptyFlight = () => ({ id: uid(), number: "", airline: "", depTime: "", depCity: "", arrTime: "", arrCity: "" });
 
 const SHARED_STYLES = `
+    .travel-filter {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: fit-content;
+        max-width: 180px;
+        margin: 0 auto;
+
+        padding: 2px;
+
+        border-radius: 20px;
+
+        background: rgba(255, 255, 255, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .travel-filter-option {
+        border: none;
+        background: transparent;
+
+        padding: 7px 14px;
+
+        border-radius: 17px;
+
+        font-family: inherit;
+        font-size: 11px;
+        font-weight: 500;
+
+        color: rgba(30, 55, 60, 0.75);
+
+        cursor: pointer;
+
+        transition:
+            background 0.2s ease,
+            color 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .travel-filter-option.active {
+        background: #ffffff;
+
+        color: #173f46;
+
+        box-shadow:
+            0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .travel-filter-option:hover:not(.active) {
+        color: #173f46;
+    }
+
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap');
 
   .tp-root {
@@ -390,11 +447,25 @@ const SHARED_STYLES = `
   .error-banner-network { background: rgba(140,106,46,0.94); box-shadow: 0 8px 22px rgba(140,106,46,0.3); }
 
   .launcher-shell { max-width: 720px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); min-height: calc(100dvh - 112px); display: flex; flex-direction: column; justify-content: center; }
+  .account-wrap { position: absolute; top: 0; right: 0; z-index: 6; }
+  .avatar-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--glass-border);
+    background: var(--glass-strong); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; padding: 0;
+    color: var(--muted); transition: transform .15s;
+  }
+  .avatar-btn:hover { transform: scale(1.06); }
+  .avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .avatar-initial { font-family: var(--font-display); font-size: 18px; font-weight: 650;}
+  .account-menu { right: 0; left: auto; top: calc(100% + 10px); min-width: 210px; }
+  .account-menu .account-info { padding: 12px 14px 10px; border-bottom: 1px solid rgba(27,36,48,0.1); margin-bottom: 6px; }
+  .account-menu .account-name { font-size: 14px; font-weight: 650; margin: 0 0 2px; }
+  .account-menu .account-email { font-size: 12px; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
   .launcher-hero { display: flex; align-items: center; justify-content: center; gap: 26px; margin-bottom: 20px; }
   .launcher-toucan { width: 166px; height: auto; flex-shrink: 0; object-fit: contain; }
   .launcher-copy { max-width: 420px; padding-top: 40px; text-align: left; }
   .launcher-content { width: 100%; max-width: 440px; margin: 0 auto; }
-  .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); }
+  .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; gap: 14px; }
   .launcher-footer .back-link { margin: 0 auto; }
   .data-tools { margin-top: 26px; display: flex; align-items: center; justify-content: center; gap: 18px; opacity: 0.5; transition: opacity .2s; }
   .data-tools:hover { opacity: 0.9; }
@@ -411,6 +482,14 @@ const SHARED_STYLES = `
   .create-stack .tp-input { width: 100%; font-size: 16px; padding: 11px 13px; text-align: center; }
   .create-stack .export-btn { padding: 10px 28px; }
   .trip-list { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .new-trip-slot.hidden { visibility: hidden; pointer-events: none; }
+  @keyframes tripCardIn {
+    from { opacity: 0; transform: translateY(26px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .trip-card { animation: tripCardIn .5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .empty-hint { animation: tripCardIn .5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @media (prefers-reduced-motion: reduce) { .trip-card, .empty-hint { animation: none !important; } }
   .trip-card {
     position: relative; display: flex; align-items: center; gap: 14px;
     background: rgba(255,255,255,0.4); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
@@ -424,7 +503,11 @@ const SHARED_STYLES = `
   }
   .trip-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 2px; }
   .trip-card-meta { font-size: 12.5px; color: var(--muted); margin: 0; font-family: var(--font-mono); }
-  .trip-card-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; }
+  .trip-card-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; position: relative; }
+  .trip-card-actions .extra-menu { right: 0; left: auto; top: calc(100% + 6px); }
+  .trip-card-actions .trip-menu button { color: var(--ink); }
+  .trip-card-actions .trip-menu button:last-child { color: var(--coral); }
+  .trip-menu-backdrop { position: fixed; inset: 0; z-index: 4; }
   .new-trip-btn {
     display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; max-width: 260px; margin-left: auto; margin-right: auto;
     border: 1px dashed var(--glass-border);
@@ -661,6 +744,14 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
     storage.delete(`trip:${id}`).catch(() => {});
   };
 
+  const setArchived = (id, archived) => {
+    setTrips((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, archived } : t));
+      storage.set("trips-index", JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
+
   const renameTrip = (id, title) => {
     setTrips((prev) => {
       const next = prev.map((t) => (t.id === id ? { ...t, title } : t));
@@ -768,7 +859,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
               </div>
             )}
             {view === "launcher" && (
-              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onImport={importTrips} user={user} onLogout={onLogout} />
+              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} />
             )}
         {view === "planner" && currentTripId && (
           <PlannerView
@@ -785,13 +876,36 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   );
 }
 
-function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport, user, onLogout }) {
+function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchive, onImport, user, onLogout }) {
   const [showForm, setShowForm] = useState(trips.length === 0);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exportSelection, setExportSelection] = useState([]);
+  const [importItem, setImportItem] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importName, setImportName] = useState("");
+  const [importDate, setImportDate] = useState("");
+  const [filter, setFilter] = useState("upcoming");
+  const [menuTripId, setMenuTripId] = useState(null);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || "";
+  const initials = (() => {
+    const name = (user?.user_metadata?.full_name || user?.email || "").trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return (name[0] || "?").toUpperCase();
+  })();
+
+  const archivedTrips = trips.filter((t) => t.archived);
+  const upcomingTrips = trips.filter((t) => !t.archived);
+  const visibleTrips = filter === "archived" ? archivedTrips : upcomingTrips;
+
+  useEffect(() => {
+    if (filter === "archived" && archivedTrips.length === 0) setFilter("upcoming");
+  }, [filter, archivedTrips.length]);
 
   useEffect(() => {
     if (showForm && inputRef.current) inputRef.current.focus();
@@ -848,19 +962,81 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
       window.alert("File non riconosciuto: non sembra un itinerario TucanoPlanner.");
       return;
     }
-    const entries = [];
-    for (const item of items) {
-      const data = item.data || item;
-      const title = (data && data.tripTitle) || item.title || "Viaggio importato";
-      const id = uid();
-      await storage.set(`trip:${id}`, JSON.stringify(data || { tripTitle: title, days: {}, extras: [] }));
-      entries.push({ id, title, createdAt: Date.now() });
+    startNextImport(items, 0);
+  };
+
+  const startNextImport = (queue, count) => {
+    if (!queue.length) {
+      setImportItem(null);
+      setImporting(false);
+      return;
     }
-    onImport(entries);
+    const item = queue[0];
+    const data = item.data || item;
+    const title = (data && data.tripTitle) || item.title || "Viaggio importato";
+    let startDate = "";
+    if (data && data.days) {
+      const keys = Object.keys(data.days).sort();
+      if (keys.length) startDate = keys[0];
+    }
+    setImportName(title);
+    setImportDate(startDate);
+    setImportItem({ queue, count });
+    setImporting(false);
+  };
+
+  const confirmImport = async () => {
+    if (!importItem) return;
+    setImporting(true);
+    const { queue, count } = importItem;
+    const item = queue[0];
+    const data = JSON.parse(JSON.stringify(item.data || item));
+    const title = importName.trim() || (data && data.tripTitle) || "Viaggio importato";
+    data.tripTitle = title;
+    if (data && data.days && importDate) {
+      const keys = Object.keys(data.days).sort();
+      if (keys.length && keys[0] !== importDate) {
+        const delta = Math.round((fromISO(importDate) - fromISO(keys[0])) / 86400000);
+        const shifted = {};
+        Object.entries(data.days).forEach(([iso, entry]) => {
+          const d = fromISO(iso);
+          d.setDate(d.getDate() + delta);
+          shifted[toISO(d)] = entry;
+        });
+        data.days = shifted;
+      }
+    }
+    const id = uid();
+    await storage.set(`trip:${id}`, JSON.stringify(data));
+    onImport([{ id, title, createdAt: Date.now() }]);
+    startNextImport(queue.slice(1), count + 1);
   };
 
   return (
-    <div className="launcher-shell">
+    <div className="launcher-shell" style={{ position: "relative" }}>
+      {user && (
+        <div className="account-wrap">
+          <button className="avatar-btn" onClick={() => setShowAccountMenu((v) => !v)} aria-label="Account">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="avatar-initial">{initials}</span>
+            )}
+          </button>
+          {showAccountMenu && (
+            <>
+              <div className="trip-menu-backdrop" onClick={() => setShowAccountMenu(false)} />
+              <div className="extra-menu account-menu">
+                <div className="account-info">
+                  <p className="account-name">{user.user_metadata?.full_name || user.email}</p>
+                  <p className="account-email">{user.email}</p>
+                </div>
+                <button onClick={onLogout}><LogOut size={14} /> Esci</button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
       <div className="launcher-hero">
         <img className="launcher-toucan" src={toucanImage} alt="Tucano" />
         <div className="launcher-copy">
@@ -873,6 +1049,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
       </div>
 
       <div className="launcher-content">
+      <div className={`new-trip-slot${filter === "archived" ? " hidden" : ""}`}>
       {showForm ? (
         <div className="create-card">
           <p className="field-label">Nome del viaggio</p>
@@ -892,55 +1069,89 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
           </div>
         </div>
       ) : (
-        <button className="new-trip-btn" onClick={() => setShowForm(true)}>
+        <button className="new-trip-btn" onClick={() => { if (filter === "archived") setFilter("upcoming"); setShowForm(true); }}>
           <Plus size={15} /> Nuovo viaggio
         </button>
       )}
+      </div>
 
-      {trips.length > 0 && (
-        <div className="trip-list">
-          {trips.map((t) => (
-            <div key={t.id} className="trip-card" onClick={() => onOpen(t.id)}>
+      {visibleTrips.length > 0 && (
+        <div className="trip-list" key={filter}>
+          {visibleTrips.map((t, i) => (
+            <div key={t.id} className="trip-card" style={{ animationDelay: `${i * 80}ms` }} onClick={() => onOpen(t.id)}>
               <div className="ic"><MapPin size={18} /></div>
               <div>
                 <p className="trip-card-title">{t.title}</p>
-                <p className="trip-card-meta">Creato il {formatShortDate(t.createdAt)}</p>
+                <p className="trip-card-meta">{t.archived ? "Archiviato" : `Creato il ${formatShortDate(t.createdAt)}`}</p>
               </div>
               <div className="trip-card-actions">
+                {menuTripId === t.id && <div className="trip-menu-backdrop" onClick={() => setMenuTripId(null)} />}
                 <button
                   className="icon-btn"
-                  aria-label="Duplica viaggio"
-                  title="Duplica"
-                  onClick={(e) => { e.stopPropagation(); onDuplicate(t.id, t.title); }}
+                  aria-label="Opzioni viaggio"
+                  title="Opzioni"
+                  onClick={(e) => { e.stopPropagation(); setMenuTripId(menuTripId === t.id ? null : t.id); }}
                 >
-                  <Copy size={15} />
+                  <MoreVertical size={15} />
                 </button>
-                <button
-                  className="icon-btn"
-                  aria-label="Elimina viaggio"
-                  onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminare il viaggio "${t.title}"? L'azione non è reversibile.`)) onDelete(t.id); }}
-                >
-                  <Trash2 size={15} />
-                </button>
+                {menuTripId === t.id && (
+                  <div className="extra-menu trip-menu">
+                    <button onClick={(e) => { e.stopPropagation(); setMenuTripId(null); onDuplicate(t.id, t.title); }}>
+                      <Copy size={14} /> Duplica
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setMenuTripId(null); onArchive(t.id, !t.archived); }}>
+                      {t.archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                      {t.archived ? "Ripristina" : "Archivia"}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuTripId(null);
+                        if (window.confirm(`Eliminare il viaggio "${t.title}"? L'azione non è reversibile.`)) onDelete(t.id);
+                      }}
+                    >
+                      <Trash2 size={14} /> Elimina
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {visibleTrips.length === 0 && filter === "archived" && (
+        <p className="empty-hint" key="empty">Nessun viaggio archiviato.</p>
+      )}
       </div>
 
       {user && (
         <div className="launcher-footer">
-          <button className="back-link" onClick={onLogout}>
-            {user.email || "Account"} · Esci
-          </button>
+          {archivedTrips.length > 0 && (
+            <div className="travel-filter">
+              <button
+                className={`travel-filter-option${filter === "upcoming" ? " active" : ""}`}
+                onClick={() => setFilter("upcoming")}
+              >
+                In arrivo
+              </button>
+              <button
+                className={`travel-filter-option${filter === "archived" ? " active" : ""}`}
+                onClick={() => setFilter("archived")}
+              >
+                Archiviati
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       <div className="data-tools">
-        <button className="data-tool" onClick={openExportPicker} disabled={trips.length === 0}>
-          Esporta itinerari (JSON)
-        </button>
+        {trips.length > 0 && (
+          <button className="data-tool" onClick={openExportPicker}>
+            Esporta itinerari (JSON)
+          </button>
+        )}
         <label className="data-tool">
           Importa itinerario (JSON)
           <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} />
@@ -975,6 +1186,46 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onImport
           </div>
         </div>
       )}
+
+      {importItem && (
+        <div className="modal-overlay">
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <p className="modal-title">{importing ? "Importazione in corso..." : "Importa viaggio"}</p>
+              {!importing && (
+                <button className="icon-btn" onClick={() => setImportItem(null)} aria-label="Chiudi"><X size={18} /></button>
+              )}
+            </div>
+            <div className="modal-body">
+              {importing ? (
+                <div className="loading-wrap">
+                  <span className="spinner" aria-hidden="true"></span>
+                  <p className="empty-hint">Importazione di “{importName}”...</p>
+                </div>
+              ) : (
+                <>
+                  <p className="field-label">Stai importando</p>
+                  <p className="trip-card-title" style={{ marginBottom: 16 }}>“{importName}”</p>
+                  {importItem.queue.length + importItem.count > 1 && (
+                    <p className="field-hint" style={{ marginBottom: 8 }}>Viaggio {importItem.count + 1} di {importItem.queue.length + importItem.count}</p>
+                  )}
+                  <div className="field-block">
+                    <p className="field-label">Nome del viaggio</p>
+                    <input className="tp-input" value={importName} onChange={(e) => setImportName(e.target.value)} />
+                  </div>
+                  <div className="field-block">
+                    <p className="field-label">Data di partenza <span className="field-hint">(lascia invariata per mantenerla)</span></p>
+                    <input type="date" className="tp-input" value={importDate} onChange={(e) => setImportDate(e.target.value)} />
+                  </div>
+                  <button className="export-btn" onClick={confirmImport} style={{ width: "100%", justifyContent: "center" }}>
+                    Importa
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1002,6 +1253,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const [showRangeForm, setShowRangeForm] = useState(true);
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
+  const [rangeError, setRangeError] = useState("");
   const [showShiftForm, setShowShiftForm] = useState(false);
   const [shiftNewStart, setShiftNewStart] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -1162,46 +1414,67 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
 
   const createRange = () => {
     if (!rangeStart || !rangeEnd) return;
-    let start = fromISO(rangeStart);
-    let end = fromISO(rangeEnd);
-    if (start > end) { const tmp = start; start = end; end = tmp; }
-
-    const keys = Object.keys(days).sort();
-    let newStartIso = toISO(start);
-    let newEndIso = toISO(end);
-
-    if (keys.length) {
-      const oldStart = fromISO(keys[0]);
-      const oldEnd = fromISO(keys[keys.length - 1]);
-      const hasOverlap = start <= oldEnd && end >= oldStart;
-
-      if (!hasOverlap) {
-        // Le nuove date non hanno alcun giorno in comune con quelle esistenti:
-        // l'intenzione è spostare l'intero viaggio sulle nuove date (come "Sposta le date").
-        const deltaDays = Math.round((start - oldStart) / 86400000);
-        shiftDaysBy(deltaDays);
-        const shiftedStart = new Date(oldStart);
-        shiftedStart.setDate(shiftedStart.getDate() + deltaDays);
-        const shiftedEnd = new Date(oldEnd);
-        shiftedEnd.setDate(shiftedEnd.getDate() + deltaDays);
-        newStartIso = toISO(shiftedStart);
-        newEndIso = toISO(shiftedEnd);
-      } else {
-        // Sovrapposizione con le date esistenti: estendi/aggiungi normalmente.
-        mergeRange(start, end);
-        const actualStart = start < oldStart ? start : oldStart;
-        const actualEnd = end > oldEnd ? end : oldEnd;
-        newStartIso = toISO(actualStart);
-        newEndIso = toISO(actualEnd);
-      }
-    } else {
-      mergeRange(start, end);
+    setRangeError("");
+    const start = fromISO(rangeStart);
+    const end = fromISO(rangeEnd);
+    if (end < start) {
+      setRangeError("La data di fine viaggio non può essere precedente a quella di inizio.");
+      return;
     }
 
-    setRangeStart(newStartIso);
-    setRangeEnd(newEndIso);
-    setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
-    setShowRangeForm(false);
+    const newCount = Math.round((end - start) / 86400000) + 1;
+    const keys = Object.keys(days).sort();
+
+    if (!keys.length) {
+      mergeRange(start, end);
+      setRangeStart(toISO(start));
+      setRangeEnd(toISO(end));
+      setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
+      setShowRangeForm(false);
+      return;
+    }
+
+    const oldStart = fromISO(keys[0]);
+    const oldEnd = fromISO(keys[keys.length - 1]);
+    const hasOverlap = start <= oldEnd && end >= oldStart;
+
+    if (hasOverlap) {
+      const delta = newCount - keys.length;
+      if (delta !== 0) {
+        const diff = Math.abs(delta);
+        const direction = delta > 0 ? "in più" : "in meno";
+        const ok = window.confirm(`Le nuove date inserite prevedono ${diff} giornate ${direction}. Procedere comunque?`);
+        if (!ok) return;
+      }
+      // Ridimensiona l'itinerario esattamente sulle date scelte: aggiunge o rimuove giornate.
+      setDays((prev) => {
+        const next = {};
+        const cur = new Date(start);
+        while (cur <= end) {
+          const iso = toISO(cur);
+          next[iso] = prev[iso] || emptyDay();
+          cur.setDate(cur.getDate() + 1);
+        }
+        return next;
+      });
+      setRangeStart(toISO(start));
+      setRangeEnd(toISO(end));
+      setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
+      setShowRangeForm(false);
+    } else {
+      // Le nuove date non hanno alcun giorno in comune con quelle esistenti:
+      // l'intenzione è spostare l'intero viaggio sulle nuove date (come "Sposta le date").
+      const deltaDays = Math.round((start - oldStart) / 86400000);
+      shiftDaysBy(deltaDays);
+      const shiftedStart = new Date(oldStart);
+      shiftedStart.setDate(shiftedStart.getDate() + deltaDays);
+      const shiftedEnd = new Date(oldEnd);
+      shiftedEnd.setDate(shiftedEnd.getDate() + deltaDays);
+      setRangeStart(toISO(shiftedStart));
+      setRangeEnd(toISO(shiftedEnd));
+      setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
+      setShowRangeForm(false);
+    }
   };
 
   const shiftTripDates = () => {
@@ -1420,6 +1693,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                     onChange={(e) => {
                       const v = e.target.value;
                       setRangeStart(v);
+                      setRangeError("");
                       // Se la data "Al" è ancora vuota la allinea a quella di partenza,
                       // così il calendario del campo "Al" si apre già sul mese di partenza.
                       if (!rangeEnd) setRangeEnd(v);
@@ -1433,10 +1707,13 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                     className="tp-input"
                     value={rangeEnd}
                     min={rangeStart || undefined}
-                    onChange={(e) => setRangeEnd(e.target.value)}
+                    onChange={(e) => { setRangeEnd(e.target.value); setRangeError(""); }}
                   />
                 </div>
               </div>
+              {rangeError && (
+                <p className="field-label" style={{ color: "var(--coral)", marginBottom: 10 }}>{rangeError}</p>
+              )}
               <div className="range-form-actions">
                 {sortedDayEntries.length > 0 && (
                   <button
@@ -1446,7 +1723,9 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                     Annulla
                   </button>
                 )}
-                <button className="export-btn" onClick={createRange}>Crea giornate</button>
+                <button className="export-btn" onClick={createRange}>
+                  {sortedDayEntries.length > 0 ? "Sposta date" : "Crea date"}
+                </button>
               </div>
             </div>
           )}
