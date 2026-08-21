@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
-import { Plane, Luggage, FileText, Moon, Plus, X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon } from "lucide-react";
+import { Plane, Luggage, FileText, Moon, Plus, X, Check, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon, Sparkles } from "lucide-react";
 import {
   CATEGORIES,
   EXTRA_META,
@@ -270,6 +270,8 @@ const SHARED_STYLES = `
   .cal-cell.dim { color: rgba(27,36,48,0.32); }
   .cal-cell.today { border-color: var(--accent); font-weight: 600; }
   .cal-cell.selected { background: rgba(27,36,48,0.85); backdrop-filter: blur(6px); color: #fff; }
+  .cal-cell.in-range { background: rgba(46,111,142,0.14); }
+  .cal-cell.range-edge { background: var(--accent); color: #fff; font-weight: 600; }
   .cal-dots { position: absolute; bottom: 3px; display: flex; gap: 2px; }
   .cal-dot-mini { width: 4px; height: 4px; border-radius: 50%; box-shadow: 0 0 4px currentColor; }
 
@@ -299,6 +301,13 @@ const SHARED_STYLES = `
   .icon-btn:hover { background: var(--glass); color: var(--coral); }
 
   .field-label { font-size: 12px; color: var(--muted); margin: 0 0 6px; font-weight: 500; }
+  .ai-suggest-btn {
+    display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--glass-border);
+    background: var(--glass); backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
+    color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    margin-bottom: 10px; white-space: nowrap; transition: background .15s, color .15s;
+  }
+  .ai-suggest-btn:hover { background: var(--glass-strong); color: var(--accent-dark); }
   .field-hint { font-weight: 400; opacity: .8; }
   .tp-input, .tp-textinput {
     width: 100%; border: 1px solid var(--glass-border); border-radius: 12px; padding: 9px 12px;
@@ -340,7 +349,7 @@ const SHARED_STYLES = `
   }
   .add-line-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
 
-  .day-editor-footer { display: flex; justify-content: flex-end; margin-top: 4px; }
+  .day-editor-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
   .danger-link { color: var(--coral); background: none; border: none; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 6px 4px; }
   .danger-link:hover { text-decoration: underline; }
 
@@ -352,6 +361,13 @@ const SHARED_STYLES = `
     box-shadow: 0 6px 20px rgba(15,30,45,0.1);
   }
   .ticket:hover { border-color: var(--accent); transform: translateY(-1px); }
+  @keyframes ticketNew {
+    0% { opacity: 0; transform: translateY(10px) scale(.97); }
+    40% { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(46,111,142,0.16), 0 6px 20px rgba(15,30,45,0.1); }
+    100% { opacity: 1; transform: none; }
+  }
+  .ticket-new { animation: ticketNew 1.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+  @media (prefers-reduced-motion: reduce) { .ticket-new { animation: none; } }
   .date-badge {
     width: 56px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
     padding: 9px 2px; border-radius: 14px; background: rgba(255,255,255,0.5); border: 1px solid var(--glass-border);
@@ -449,7 +465,7 @@ const SHARED_STYLES = `
   .launcher-shell { max-width: 720px; margin: 0 auto; text-align: center; min-height: calc(100vh - 112px); min-height: calc(100dvh - 112px); display: flex; flex-direction: column; justify-content: center; }
   .account-wrap { position: absolute; top: 0; right: 0; z-index: 6; }
   .avatar-btn {
-    width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--glass-border);
+    width: 40px; height: 40px; border-radius: 50%;
     background: var(--glass-strong); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; padding: 0;
     color: var(--muted); transition: transform .15s;
@@ -504,6 +520,7 @@ const SHARED_STYLES = `
   .trip-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 2px; }
   .trip-card-meta { font-size: 12.5px; color: var(--muted); margin: 0; font-family: var(--font-mono); }
   .trip-card-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; position: relative; }
+  .trip-card.menu-open { z-index: 6; }
   .trip-card-actions .extra-menu { right: 0; left: auto; top: calc(100% + 6px); }
   .trip-card-actions .trip-menu button { color: var(--ink); }
   .trip-card-actions .trip-menu button:last-child { color: var(--coral); }
@@ -515,6 +532,7 @@ const SHARED_STYLES = `
     color: var(--muted); font-size: 13.5px; padding: 12px; border-radius: 16px; cursor: pointer; margin-bottom: 24px;
   }
   .new-trip-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
+  .tp-card .new-trip-btn { margin-bottom: 0; margin-top: 14px; }
 
   /* --- Ricerca luogo (geocoding) --- */
   .loc-search { position: relative; min-width: 0; }
@@ -619,7 +637,7 @@ const SHARED_STYLES = `
     .create-card { padding: 16px; }
     .trip-list { gap: 8px; }
     .trip-card { padding: 11px 13px; gap: 11px; }
-    .ticket, .trip-card, .extra-card { content-visibility: auto; contain-intrinsic-size: auto 100px; }
+    .ticket, .extra-card { content-visibility: auto; contain-intrinsic-size: auto 100px; }
     .launcher-shell { min-height: calc(100vh - 74px); min-height: calc(100dvh - 74px); }
     .launcher-title { font-size: 34px; }
     .launcher-sub { margin-bottom: 18px; }
@@ -1075,17 +1093,18 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       )}
       </div>
 
+      {menuTripId && <div className="trip-menu-backdrop" onClick={() => setMenuTripId(null)} />}
+
       {visibleTrips.length > 0 && (
         <div className="trip-list" key={filter}>
           {visibleTrips.map((t, i) => (
-            <div key={t.id} className="trip-card" style={{ animationDelay: `${i * 80}ms` }} onClick={() => onOpen(t.id)}>
+            <div key={t.id} className={`trip-card${menuTripId === t.id ? " menu-open" : ""}`} style={{ animationDelay: `${i * 80}ms` }} onClick={() => onOpen(t.id)}>
               <div className="ic"><MapPin size={18} /></div>
               <div>
                 <p className="trip-card-title">{t.title}</p>
                 <p className="trip-card-meta">{t.archived ? "Archiviato" : `Creato il ${formatShortDate(t.createdAt)}`}</p>
               </div>
               <div className="trip-card-actions">
-                {menuTripId === t.id && <div className="trip-menu-backdrop" onClick={() => setMenuTripId(null)} />}
                 <button
                   className="icon-btn"
                   aria-label="Opzioni viaggio"
@@ -1242,6 +1261,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const dayEditorRef = useRef(null);
   const scrollOnSelectRef = useRef(false);
   const [daySlideDir, setDaySlideDir] = useState("next");
+  const [newDayIso, setNewDayIso] = useState(null);
 
   useEffect(() => {
     if (selectedDate && scrollOnSelectRef.current && dayEditorRef.current) {
@@ -1249,6 +1269,16 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     }
     scrollOnSelectRef.current = false;
   }, [selectedDate]);
+
+  // La giornata appena creata viene portata in vista ed evidenziata dall'animazione
+  // .ticket-new; trascorso il tempo dell'animazione lo stato si resetta.
+  useEffect(() => {
+    if (!newDayIso) return;
+    const el = document.getElementById(`ticket-${newDayIso}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const t = setTimeout(() => setNewDayIso(null), 1500);
+    return () => clearTimeout(t);
+  }, [newDayIso]);
   const [showExtraMenu, setShowExtraMenu] = useState(false);
   const [showRangeForm, setShowRangeForm] = useState(true);
   const [rangeStart, setRangeStart] = useState("");
@@ -1332,7 +1362,23 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const openDay = (iso) => {
     // Le nuove date si creano solo tramite "Crea più giorni insieme" (Dal/Al):
     // qui si possono solo aprire le giornate già esistenti, per evitare aggiunte involontarie.
-    if (!days[iso]) return;
+    if (!days[iso]) {
+      // Solo alla prima creazione (nessuna giornata esistente) un clic sul calendario
+      // compone l'intervallo Dal/Al: primo clic = partenza, secondo clic = ritorno.
+      if (!sortedDayEntries.length && showRangeForm) {
+        setRangeError("");
+        if (!rangeStart || (rangeStart && rangeEnd)) {
+          setRangeStart(iso);
+          setRangeEnd("");
+        } else if (iso < rangeStart) {
+          setRangeEnd(rangeStart);
+          setRangeStart(iso);
+        } else {
+          setRangeEnd(iso);
+        }
+      }
+      return;
+    }
     setSelectedDate(iso);
   };
 
@@ -1379,6 +1425,16 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     if (selectedDate === isoToRemove) setSelectedDate(null);
   };
 
+  const addDay = () => {
+    const keys = Object.keys(days).sort();
+    const base = keys.length ? fromISO(keys[keys.length - 1]) : new Date();
+    base.setDate(base.getDate() + 1);
+    const iso = toISO(base);
+    setDays((prev) => ({ ...prev, [iso]: emptyDay() }));
+    setCurrentMonth(new Date(base.getFullYear(), base.getMonth(), 1));
+    setNewDayIso(iso);
+  };
+
   const presetRangeFromDays = () => {
     const keys = Object.keys(days).sort();
     if (keys.length) {
@@ -1422,7 +1478,6 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       return;
     }
 
-    const newCount = Math.round((end - start) / 86400000) + 1;
     const keys = Object.keys(days).sort();
 
     if (!keys.length) {
@@ -1434,47 +1489,16 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       return;
     }
 
+    // Con le date già impostate si può solo traslare l'intero viaggio: la durata
+    // resta invariata e si cambia solo aggiungendo/rimuovendo giornate singole.
     const oldStart = fromISO(keys[0]);
-    const oldEnd = fromISO(keys[keys.length - 1]);
-    const hasOverlap = start <= oldEnd && end >= oldStart;
-
-    if (hasOverlap) {
-      const delta = newCount - keys.length;
-      if (delta !== 0) {
-        const diff = Math.abs(delta);
-        const direction = delta > 0 ? "in più" : "in meno";
-        const ok = window.confirm(`Le nuove date inserite prevedono ${diff} giornate ${direction}. Procedere comunque?`);
-        if (!ok) return;
-      }
-      // Ridimensiona l'itinerario esattamente sulle date scelte: aggiunge o rimuove giornate.
-      setDays((prev) => {
-        const next = {};
-        const cur = new Date(start);
-        while (cur <= end) {
-          const iso = toISO(cur);
-          next[iso] = prev[iso] || emptyDay();
-          cur.setDate(cur.getDate() + 1);
-        }
-        return next;
-      });
-      setRangeStart(toISO(start));
-      setRangeEnd(toISO(end));
-      setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
-      setShowRangeForm(false);
-    } else {
-      // Le nuove date non hanno alcun giorno in comune con quelle esistenti:
-      // l'intenzione è spostare l'intero viaggio sulle nuove date (come "Sposta le date").
-      const deltaDays = Math.round((start - oldStart) / 86400000);
+    const deltaDays = Math.round((start - oldStart) / 86400000);
+    if (deltaDays !== 0) {
       shiftDaysBy(deltaDays);
-      const shiftedStart = new Date(oldStart);
-      shiftedStart.setDate(shiftedStart.getDate() + deltaDays);
-      const shiftedEnd = new Date(oldEnd);
-      shiftedEnd.setDate(shiftedEnd.getDate() + deltaDays);
-      setRangeStart(toISO(shiftedStart));
-      setRangeEnd(toISO(shiftedEnd));
       setCurrentMonth(new Date(start.getFullYear(), start.getMonth(), 1));
-      setShowRangeForm(false);
+      setSelectedDate(null);
     }
+    setShowRangeForm(false);
   };
 
   const shiftTripDates = () => {
@@ -1601,6 +1625,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         />
         {showCoverInput ? (
           <div className="cover-input-row no-print">
+            {coverImageUrl && <img className="image-preview" src={coverImageUrl} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} />}
             <input
               className="tp-input"
               value={coverImageUrl}
@@ -1652,12 +1677,14 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
             const inMonth = d.getMonth() === currentMonth.getMonth();
             const isToday = sameDay(d, today);
             const isSelected = selectedDate === iso;
+            const isRangeEdge = !selectedDate && (iso === rangeStart || iso === rangeEnd);
+            const isInRange = !selectedDate && rangeStart && rangeEnd && iso > rangeStart && iso < rangeEnd;
             const entry = days[iso];
             const cats = entry && entry.categories ? entry.categories.map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean) : [];
             return (
               <button
                 key={i}
-                className={`cal-cell ${!inMonth ? "dim" : ""} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}`}
+                className={`cal-cell ${!inMonth ? "dim" : ""} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""} ${isRangeEdge ? "range-edge" : ""} ${isInRange ? "in-range" : ""}`}
                 onClick={() => openDay(iso)}
               >
                 {d.getDate()}
@@ -1692,25 +1719,46 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                     value={rangeStart}
                     onChange={(e) => {
                       const v = e.target.value;
-                      setRangeStart(v);
                       setRangeError("");
-                      // Se la data "Al" è ancora vuota la allinea a quella di partenza,
-                      // così il calendario del campo "Al" si apre già sul mese di partenza.
-                      if (!rangeEnd) setRangeEnd(v);
+                      if (sortedDayEntries.length > 0 && rangeStart && rangeEnd && v) {
+                        // Solo la partenza è modificabile: il ritorno trasla della stessa quantità,
+                        // così la durata del viaggio resta invariata.
+                        const delta = Math.round((fromISO(v) - fromISO(rangeStart)) / 86400000);
+                        const newEnd = fromISO(rangeEnd);
+                        newEnd.setDate(newEnd.getDate() + delta);
+                        setRangeEnd(toISO(newEnd));
+                      } else if (!rangeEnd) {
+                        // Se la data "Al" è ancora vuota la allinea a quella di partenza,
+                        // così il calendario del campo "Al" si apre già sul mese di partenza.
+                        setRangeEnd(v);
+                      }
+                      setRangeStart(v);
                     }}
                   />
                 </div>
-                <div>
-                  <p className="field-label">Al</p>
-                  <input
-                    type="date"
-                    className="tp-input"
-                    value={rangeEnd}
-                    min={rangeStart || undefined}
-                    onChange={(e) => { setRangeEnd(e.target.value); setRangeError(""); }}
-                  />
-                </div>
+                {sortedDayEntries.length === 0 && (
+                  <div>
+                    <p className="field-label">Al</p>
+                    <input
+                      type="date"
+                      className="tp-input"
+                      value={rangeEnd}
+                      min={rangeStart || undefined}
+                      onChange={(e) => { setRangeEnd(e.target.value); setRangeError(""); }}
+                    />
+                  </div>
+                )}
               </div>
+              {sortedDayEntries.length > 0 && (
+                <p className="field-hint" style={{ margin: "-6px 0 10px", fontSize: 12 }}>
+                  La data di ritorno verrà spostata automaticamente.
+                </p>
+              )}
+              {sortedDayEntries.length === 0 && (
+                <p className="field-hint" style={{ margin: "-6px 0 10px", fontSize: 12 }}>
+                  Suggerimento: puoi selezionare le date anche cliccando direttamente sul calendario.
+                </p>
+              )}
               {rangeError && (
                 <p className="field-label" style={{ color: "var(--coral)", marginBottom: 10 }}>{rangeError}</p>
               )}
@@ -1724,7 +1772,7 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                   </button>
                 )}
                 <button className="export-btn" onClick={createRange}>
-                  {sortedDayEntries.length > 0 ? "Sposta date" : "Crea date"}
+                  {sortedDayEntries.length > 0 ? "Cambia data di partenza" : "Crea date"}
                 </button>
               </div>
             </div>
@@ -1778,34 +1826,39 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
         {sortedDayEntries.length === 0 ? (
           <p className="empty-hint">Nessuna giornata ancora. Fissa le date con "Crea più giorni insieme" per iniziare.</p>
         ) : (
-          <div className="ticket-list">
-            {sortedDayEntries.map(([iso, entry]) => {
-              const d = fromISO(iso);
-              const cats = (entry.categories || []).map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean);
-              const activities = entry.activities.filter((a) => a.trim());
-              return (
-                <div key={iso} className="ticket" onClick={() => { scrollOnSelectRef.current = true; setSelectedDate(iso); }}>
-                  <div className="date-badge">
-                    <span className="wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
-                    <span className="dnum">{d.getDate()}</span>
-                    <span className="mo">{MONTHS[d.getMonth()].slice(0, 3)}</span>
+          <>
+            <div className="ticket-list">
+              {sortedDayEntries.map(([iso, entry]) => {
+                const d = fromISO(iso);
+                const cats = (entry.categories || []).map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean);
+                const activities = entry.activities.filter((a) => a.trim());
+                return (
+                  <div key={iso} id={`ticket-${iso}`} className={`ticket${iso === newDayIso ? " ticket-new" : ""}`} onClick={() => { scrollOnSelectRef.current = true; setSelectedDate(iso); }}>
+                    <div className="date-badge">
+                      <span className="wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
+                      <span className="dnum">{d.getDate()}</span>
+                      <span className="mo">{MONTHS[d.getMonth()].slice(0, 3)}</span>
+                    </div>
+                    <div className="ticket-body">
+                      {entry.place && <p className="place-title">{entry.place}</p>}
+                      {cats.length > 0 && (
+                        <div className="cat-tags">
+                          {cats.map((c) => <span key={c.id} className="cat-tag" style={{ color: c.color }}>{c.label}</span>)}
+                        </div>
+                      )}
+                      <p className="acts">{activities.length ? activities.join(" · ") : "Nessuna attività"}</p>
+                      {entry.accommodation && (
+                        <p className="stay"><Moon size={12} /> {entry.accommodation}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="ticket-body">
-                    {entry.place && <p className="place-title">{entry.place}</p>}
-                    {cats.length > 0 && (
-                      <div className="cat-tags">
-                        {cats.map((c) => <span key={c.id} className="cat-tag" style={{ color: c.color }}>{c.label}</span>)}
-                      </div>
-                    )}
-                    <p className="acts">{activities.length ? activities.join(" · ") : "Nessuna attività"}</p>
-                    {entry.accommodation && (
-                      <p className="stay"><Moon size={12} /> {entry.accommodation}</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+            <button className="new-trip-btn" onClick={addDay}>
+              <Plus size={15} /> Aggiungi giornata
+            </button>
+          </>
         )}
       </div>
 
@@ -1952,6 +2005,9 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
 
       <div className="field-block">
         <p className="field-label">Programma della giornata</p>
+        <button className="ai-suggest-btn" onClick={() => {}}>
+          <Sparkles size={13} /> Suggerisci con l'IA
+        </button>
         {data.activities.map((a, i) => (
           <div
             className={`list-row ${overIndex === i ? "drag-over" : ""}`}
@@ -1993,6 +2049,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
 
       <div className="day-editor-footer">
         <button className="danger-link" onClick={() => { if (window.confirm("Eliminare questa giornata dall'itinerario?")) onDelete(); }}><Trash2 size={13} /> Elimina giornata</button>
+        <button className="export-btn" onClick={onClose}><Check size={14} /> Fatto</button>
       </div>
       </div>
     </div>
