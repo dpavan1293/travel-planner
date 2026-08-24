@@ -2,7 +2,8 @@ import OpenAI from "openai";
 
 
 const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 180_000,
 });
 
 export default async (req) => {
@@ -15,8 +16,13 @@ export default async (req) => {
       travel_dates,
       travel_style
     } = await req.json();
+	
+	console.log("FUNCTION START:", new Date().toISOString());
 
-    const response = await client.responses.create({
+	console.log("OPENAI START:", new Date().toISOString());
+
+    const stream = await client.responses.create({
+      stream: true,
       prompt: {
         "id": "pmpt_6a8b12dad62c8193aef0584fc484046c0fcd35c99bb9d0cf",
 		"version": "8",
@@ -30,9 +36,16 @@ export default async (req) => {
       }
     });
 
+    let text = "";
+    for await (const event of stream) {
+      if (event.type === "response.output_text.delta") {
+        text += event.delta;
+      }
+    }
 
+	console.log("OPENAI END:", new Date().toISOString());
     return new Response(
-      response.output_text,
+      text,
       {
         status: 200,
         headers: {
@@ -40,6 +53,9 @@ export default async (req) => {
         }
       }
     );
+	
+
+	console.log("FUNCTION END:", new Date().toISOString());
 
   } catch (error) {
   console.error("OPENAI ERROR:");

@@ -599,7 +599,7 @@ const SHARED_STYLES = `
   }
   .ai-wizard-dot.active { background: linear-gradient(135deg, rgba(120,60,200,0.9), rgba(80,50,180,0.9)); transform: scale(1.2); }
   .ai-wizard-card {
-    background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); margin: 0px 0px 10px 0px;
     border: 1.5px solid var(--glass-border); border-radius: 20px; padding: 28px 24px; text-align: center;
   }
   .ai-wizard-step-label { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
@@ -1161,10 +1161,26 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Errore ${res.status}`);
-      const data = await res.json();
-      console.log("AI itinerary response:", data);
-      window.alert("Itinerario generato con successo! (dettagli in console)");
-      aiWizardCancel();
+      const raw = await res.json();
+      console.log("AI itinerary raw response:", raw);
+
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const data = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+      console.log("AI itinerary parsed:", data);
+
+      if (!data || !data.days || typeof data.days !== "object") {
+        throw new Error("Formato risposta AI non valido: manca l'oggetto 'days'");
+      }
+
+      const title = data.tripTitle || aiDestination || "Viaggio AI";
+      data.tripTitle = title;
+      if (!data.extras) data.extras = [];
+
+      const id = uid();
+      await storage.set(`trip:${id}`, JSON.stringify(data));
+      onImport([{ id, title, createdAt: Date.now() }]);
+      setCurrentTripId(id);
+      setView("planner");
     } catch (err) {
       console.error("AI generation error:", err);
       window.alert("Si è verificato un errore durante la generazione dell'itinerario. Riprova più tardi.");
