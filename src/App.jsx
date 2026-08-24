@@ -2724,7 +2724,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
               body: JSON.stringify({
                 destination: data.place,
                 date: iso,
-                existingactivities: data.activities.filter(Boolean),
+                existingactivities: data.activities.filter(Boolean).join(", "),
               }),
             });
             if (!res.ok) throw new Error(`Errore ${res.status}`);
