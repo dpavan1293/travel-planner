@@ -2603,6 +2603,10 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
   const [showDayUnsplashPicker, setShowDayUnsplashPicker] = useState(false);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestedActivities, setSuggestedActivities] = useState([]);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState([]);
   const touchStartX = useRef(null);
   const dayNumber = dayIndex >= 0 ? dayIndex + 1 : null;
 
@@ -2710,26 +2714,34 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
 
       <div className="field-block">
         <p className="field-label">Programma della giornata</p>
-        <button className="ai-suggest-btn" onClick={async () => {
+        <button className="ai-suggest-btn" disabled={suggestLoading} onClick={async () => {
+          setSuggestLoading(true);
           console.log("[AI Suggest] Calling activities API...");
           try {
             const res = await fetch("/.netlify/functions/activities", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                place: data.place,
+                destination: data.place,
                 date: iso,
-                existingActivities: data.activities.filter(Boolean),
+                existingactivities: data.activities.filter(Boolean),
               }),
             });
             if (!res.ok) throw new Error(`Errore ${res.status}`);
             const raw = await res.json();
-            console.log("[AI Suggest] Response:", raw);
+            const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+            console.log("[AI Suggest] Parsed:", parsed);
+            const activities = parsed?.activities || [];
+            setSuggestedActivities(activities);
+            setSelectedSuggestions(activities.map((_, i) => i));
+            setShowSuggestModal(true);
           } catch (err) {
             console.error("[AI Suggest] Error:", err.message);
+          } finally {
+            setSuggestLoading(false);
           }
         }}>
-          <Sparkles size={13} /> Suggerisci con l'IA
+          <span className="creation-option-icon">✨</span> {suggestLoading ? "Generazione..." : "Suggerisci con l'IA"}
         </button>
         {data.activities.map((a, i) => (
           <div
@@ -2774,6 +2786,82 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
         <button className="danger-link" onClick={() => { if (window.confirm("Eliminare questa giornata dall'itinerario?")) onDelete(); }}><Trash2 size={13} /> Elimina giornata</button>
         <button className="export-btn" onClick={onClose}><Check size={14} /> Fatto</button>
       </div>
+
+      {showSuggestModal && (
+        <div className="modal-overlay" onClick={() => setShowSuggestModal(false)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <p className="modal-title"><span className="creation-option-icon">✨</span> Attività suggerite</p>
+              <button className="icon-btn" onClick={() => setShowSuggestModal(false)} aria-label="Chiudi"><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              {suggestedActivities.length === 0 ? (
+                <p className="empty-hint">Nessuna attività trovata.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {suggestedActivities.map((a, i) => {
+                    const checked = selectedSuggestions.includes(i);
+                    return (
+                      <label
+                        key={i}
+                        className="check-row"
+                        style={{
+                          padding: "10px 12px", borderRadius: 12, cursor: "pointer",
+                          background: checked ? "rgba(120,60,200,0.08)" : "rgba(255,255,255,0.3)",
+                          border: `1px solid ${checked ? "rgba(120,60,200,0.4)" : "var(--glass-border)"}`,
+                          transition: "all .15s",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedSuggestions((prev) =>
+                              prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+                            );
+                          }}
+                          style={{ accentColor: "rgba(120,60,200,0.8)" }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", margin: 0 }}>{a.name}</p>
+                          <p style={{ fontSize: 11, color: "var(--muted)", margin: "2px 0 0", lineHeight: 1.4 }}>{a.description}</p>
+                          <p style={{ fontSize: 11, color: "var(--accent-dark)", margin: "4px 0 0", fontWeight: 500 }}>~{a.duration_minutes} min</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              {suggestedActivities.length > 0 && (
+                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <button
+                    className="ai-wizard-back"
+                    onClick={() => setShowSuggestModal(false)}
+                    style={{ flex: 1 }}
+                  >Annulla</button>
+                  <button
+                    className="export-btn"
+                    disabled={!selectedSuggestions.length}
+                    onClick={() => {
+                      const toAdd = selectedSuggestions
+                        .filter((i) => suggestedActivities[i])
+                        .map((i) => `${suggestedActivities[i].name} (${suggestedActivities[i].duration_minutes} min)`);
+                      const current = data.activities.filter(Boolean);
+                      onChange({ activities: [...current, ...toAdd] });
+                      setShowSuggestModal(false);
+                      setSuggestedActivities([]);
+                      setSelectedSuggestions([]);
+                    }}
+                    style={{ flex: 1, justifyContent: "center" }}
+                  >
+                    Aggiungi ({selectedSuggestions.length})
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

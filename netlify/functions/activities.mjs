@@ -9,12 +9,12 @@ export default async (req) => {
   try {
 
     const {
-      place,
+      destination,
       date,
-      existingActivities = []
+      existingactivities = []
     } = await req.json();
 
-    console.log("[activities] START", { place, date, existingActivities });
+    console.log("[activities] START", { destination, date, existingactivities });
 
     const response = await client.responses.create({
 
@@ -27,11 +27,49 @@ export default async (req) => {
           role: "user",
           content: JSON.stringify({
             date,
-            destination: place,
-            existingactivities: existingActivities
+            destination,
+            existingactivities
           })
         }
-      ]
+      ],
+
+      text: {
+        format: {
+          type: "json_schema",
+          name: "day_activities",
+          strict: false,
+          schema: {
+            type: "object",
+            properties: {
+              activities: {
+                type: "array",
+                description: "List of activities suggested for the requested destination.",
+                items: {
+                  type: "object",
+                  properties: {
+                    name: {
+                      type: "string",
+                      description: "Name of the activity or attraction."
+                    },
+                    description: {
+                      type: "string",
+                      description: "Short description of the activity, explaining why it is interesting."
+                    },
+                    duration_minutes: {
+                      type: "integer",
+                      description: "Approximate time needed to visit or experience the activity, in minutes."
+                    }
+                  },
+                  required: ["name", "description", "duration_minutes"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["activities"],
+            additionalProperties: false
+          }
+        }
+      }
 
     });
 
