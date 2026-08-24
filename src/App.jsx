@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
@@ -139,7 +140,7 @@ const SHARED_STYLES = `
 
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap');
 
-  .tp-root {
+  :root {
     --ink: #1B2430;
     --muted: rgba(27,36,48,0.62);
     --line: rgba(255,255,255,0.55);
@@ -155,6 +156,9 @@ const SHARED_STYLES = `
     --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
     --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Inter", monospace;
     --font-page-title: "Canela", Georgia, serif;
+  }
+
+  .tp-root {
     font-family: var(--font-text);
     color: var(--ink);
     min-height: 100vh;
@@ -213,19 +217,20 @@ const SHARED_STYLES = `
   .cover-input-row .tp-input { flex: 1; }
 
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(15,25,35,0.45); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    position: fixed; inset: 0; background: rgba(15,25,35,0.5);
     display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+    font-family: var(--font-text);
   }
   .modal-card {
     background: rgba(255,255,255,0.88); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
     border: 1px solid var(--glass-border); border-radius: 22px; width: 100%; max-width: 560px; max-height: 80vh;
     display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,25,35,0.35); overflow: hidden;
   }
-  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; }
-  .modal-title { font-family: var(--font-display); font-weight: 650; font-size: 17px; margin: 0; }
-  .modal-search-row { display: flex; gap: 8px; padding: 0 20px 14px; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px 4px; }
+  .modal-title { font-family: var(--font-display); font-weight: 650; font-size: 15px; margin: 0; }
+  .modal-search-row { display: flex; gap: 6px; padding: 0 12px 6px; }
   .modal-search-row .tp-input { flex: 1; }
-  .modal-body { padding: 0 20px 16px; overflow-y: auto; flex: 1; }
+  .modal-body { padding: 0 12px 8px; overflow-y: auto; flex: 1; }
   .unsplash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .unsplash-thumb {
     position: relative; border: none; padding: 0; border-radius: 10px; overflow: hidden; cursor: pointer;
@@ -237,7 +242,7 @@ const SHARED_STYLES = `
     position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 6px; font-size: 9.5px; color: #fff;
     background: linear-gradient(0deg, rgba(0,0,0,0.65), transparent); text-align: left;
   }
-  .modal-footnote { font-size: 11px; color: var(--muted); text-align: center; padding: 10px 20px 16px; margin: 0; }
+  .modal-footnote { font-size: 11px; color: var(--muted); text-align: center; padding: 4px 12px 8px; margin: 0; }
   .modal-footnote a { color: var(--accent-dark); }
   @media (max-width: 480px) {
     .unsplash-grid { grid-template-columns: repeat(2, 1fr); }
@@ -283,7 +288,7 @@ const SHARED_STYLES = `
   .range-form-row input[type="date"] { min-width: 0; }
   .range-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
 
-  .day-editor { border-top: 1px solid var(--glass-border); margin-top: 16px; padding-top: 16px; }
+  .day-editor { border-top: 1px solid var(--glass-border); margin-top: 16px; padding-top: 16px; position: relative; }
   .day-editor-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 8px; }
   .day-editor-head-actions { display: flex; align-items: center; gap: 4px; }
   .day-editor-center { flex: 1; text-align: center; min-width: 0; }
@@ -357,10 +362,11 @@ const SHARED_STYLES = `
   .danger-link:hover { text-decoration: underline; }
 
   .ticket-list { display: flex; flex-direction: column; gap: 10px; }
+  .ticket-list p { margin: 5px;}
   .ticket {
     position: relative; display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.4);
     backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, transform .15s;
+    border: 1px solid var(--glass-border); border-radius: 18px; padding: 10px 14px; cursor: pointer; transition: border-color .15s, transform .15s;
     box-shadow: 0 6px 20px rgba(15,30,45,0.1);
   }
   .ticket:hover { border-color: var(--accent); transform: translateY(-1px); }
@@ -390,7 +396,7 @@ const SHARED_STYLES = `
   .ticket-body { flex: 1; padding: 2px 22px 2px 0; min-width: 0; }
   .ticket-body .place-title { font-family: var(--font-display); font-size: 15.5px; font-weight: 600; margin: 0 0 3px; color: var(--ink); }
   .ticket-body .cat { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 4px; }
-  .ticket-body .acts { font-size: 13.5px; color: var(--ink); margin: 0 0 4px; line-height: 1.4; }
+  .ticket-body .acts { font-size: 13px; color: var(--ink); margin: 0 0 2px; line-height: 1.3; font-family: var(--font-text); }
   .ticket-body .stay { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
 
   .extras-row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -629,21 +635,29 @@ const SHARED_STYLES = `
 
   /* --- AI Wizard --- */
   .ai-wizard { width: 100%; max-width: 440px; margin: 0 auto; }
-  .ai-wizard-progress { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
-  .ai-wizard-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25);
-    border: 1px solid var(--glass-border); transition: background .25s, transform .25s;
+  .ai-wizard-progress { display: flex; gap: 4px; margin-bottom: 18px; }
+  .ai-wizard-progress-line {
+    flex: 1; height: 3px; border-radius: 2px;
+    background: rgba(120,60,200,0.12);
+    transition: background .3s ease;
   }
-  .ai-wizard-dot.active { background: linear-gradient(135deg, rgba(120,60,200,0.9), rgba(80,50,180,0.9)); transform: scale(1.2); }
+  .ai-wizard-progress-line.active {
+    background: linear-gradient(90deg, rgba(120,60,200,0.8), rgba(80,50,180,0.9));
+  }
   .ai-wizard-card {
     background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); margin: 0px 0px 10px 0px;
     border: 1.5px solid var(--glass-border); border-radius: 20px; padding: 28px 24px; text-align: center;
+    position: relative;
+  }
+  .ai-wizard-close {
+    display: none;
   }
   .ai-wizard-step-label { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
   .ai-wizard-title { font-family: var(--font-page-title); font-size: 24px; font-weight: 400; margin: 0 0 6px; }
   .ai-wizard-subtitle { font-size: 14px; color: var(--muted); margin: 0 0 22px; }
   .ai-wizard-input { width: 100%; font-size: 16px; padding: 12px 14px; text-align: center; box-sizing: border-box; }
   .ai-wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; gap: 10px; }
+  .ai-wizard-actions-left { display: flex; align-items: center; gap: 8px; }
   .ai-wizard-back {
     border: none; background: none; color: var(--muted); font-size: 13px; cursor: pointer;
     font-family: var(--font-text); padding: 8px 4px;
@@ -1211,10 +1225,8 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
   const aiWizardConfirm = async () => {
     setAiGenerating(true);
-    const jobId = uid();
     try {
       const payload = {
-        jobId,
         destination: aiDestination,
         duration: Number(aiDays),
         travel_period: aiDateMode === "period" ? formatWizardDates() : null,
@@ -1228,66 +1240,41 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Errore ${res.status}`);
-      const { jobId: returnedJobId } = await res.json();
-      console.log("[AI Wizard] Job started:", returnedJobId);
+      const raw = await res.json();
+      console.log("[AI Wizard] Raw response received, length:", JSON.stringify(raw).length);
 
-      const MAX_POLLS = 300;
-      const POLL_INTERVAL = 3000;
-      let pollCount = 0;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      const data = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+      console.log("[AI Wizard] Parsed trip, days:", Object.keys(data?.days || {}).length);
 
-      while (pollCount < MAX_POLLS) {
-        await new Promise((r) => setTimeout(r, POLL_INTERVAL));
-        pollCount++;
-        console.log(`[AI Wizard] Polling #${pollCount}...`);
-
-        const statusRes = await fetch(`/.netlify/functions/itinerary-status?jobId=${returnedJobId}`);
-        if (!statusRes.ok) continue;
-        const status = await statusRes.json();
-        console.log("[AI Wizard] Poll result:", status.status);
-
-        if (status.status === "done") {
-          const raw = status.data;
-          const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-          const data = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
-          console.log("[AI Wizard] Parsed trip, days:", Object.keys(data?.days || {}).length);
-
-          if (!data || !data.days || typeof data.days !== "object") {
-            throw new Error("Formato risposta AI non valido: manca l'oggetto 'days'");
-          }
-
-          const title = data.tripTitle || aiDestination || "Viaggio AI";
-          data.tripTitle = title;
-          if (!data.extras) data.extras = [];
-
-          const id = uid();
-          try {
-            await storage.set(`trip:${id}`, JSON.stringify(data));
-            console.log("[AI Wizard] Trip saved to storage, id:", id);
-          } catch (storageErr) {
-            console.error("[AI Wizard] Storage save failed:", storageErr.message);
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            window.alert("Salvataggio non riuscito. Il file JSON è stato scaricato. Puoi importarlo manualmente dalla scheda viaggi.");
-            aiWizardCancel();
-            return;
-          }
-          onImport([{ id, title, createdAt: Date.now() }]);
-          console.log("[AI Wizard] Done — navigating to planner");
-          onNavigateToPlanner(id);
-          return;
-        }
-
-        if (status.status === "error") {
-          throw new Error(status.error || "Generazione AI fallita");
-        }
+      if (!data || !data.days || typeof data.days !== "object") {
+        throw new Error("Formato risposta AI non valido: manca l'oggetto 'days'");
       }
 
-      throw new Error("Timeout: la generazione sta prendendo troppo tempo");
+      const title = data.tripTitle || aiDestination || "Viaggio AI";
+      data.tripTitle = title;
+      if (!data.extras) data.extras = [];
+
+      const id = uid();
+      try {
+        await storage.set(`trip:${id}`, JSON.stringify(data));
+        console.log("[AI Wizard] Trip saved to storage, id:", id);
+      } catch (storageErr) {
+        console.error("[AI Wizard] Storage save failed:", storageErr.message);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        window.alert("Salvataggio non riuscito. Il file JSON è stato scaricato. Puoi importarlo manualmente dalla scheda viaggi.");
+        aiWizardCancel();
+        return;
+      }
+      onImport([{ id, title, createdAt: Date.now() }]);
+      console.log("[AI Wizard] Done — navigating to planner");
+      onNavigateToPlanner(id);
     } catch (err) {
       console.error("[AI Wizard] Error:", err.message);
       window.alert("Si è verificato un errore durante la generazione dell'itinerario. Riprova più tardi.");
@@ -1434,14 +1421,15 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       <div className={`new-trip-slot${filter === "archived" ? " hidden" : ""}`}>
       {aiWizardStep > 0 ? (
         <div className="ai-wizard">
-          <div className="ai-wizard-progress">
-            {[1,2,3,4,5].map((s) => (
-              <div key={s} className={`ai-wizard-dot${aiWizardStep >= s ? " active" : ""}`} />
-            ))}
-          </div>
 
           {aiWizardStep === 1 && (
             <div className="ai-wizard-card">
+              <button className="icon-btn ai-wizard-close" onClick={aiWizardCancel} aria-label="Chiudi" title="Annulla"><X size={16} /></button>
+              <div className="ai-wizard-progress">
+                {[1,2,3,4,5].map((s) => (
+                  <div key={s} className={`ai-wizard-progress-line${aiWizardStep >= s ? " active" : ""}`} />
+                ))}
+              </div>
               <p className="ai-wizard-step-label">Passo 1 di 5</p>
               <h2 className="ai-wizard-title">Dove vuoi andare?</h2>
               <p className="ai-wizard-subtitle">Inserisci la destinazione del tuo viaggio</p>
@@ -1462,6 +1450,12 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
           {aiWizardStep === 2 && (
             <div className="ai-wizard-card">
+              <button className="icon-btn ai-wizard-close" onClick={aiWizardCancel} aria-label="Chiudi" title="Annulla"><X size={16} /></button>
+              <div className="ai-wizard-progress">
+                {[1,2,3,4,5].map((s) => (
+                  <div key={s} className={`ai-wizard-progress-line${aiWizardStep >= s ? " active" : ""}`} />
+                ))}
+              </div>
               <p className="ai-wizard-step-label">Passo 2 di 5</p>
               <h2 className="ai-wizard-title">Quanti giorni?</h2>
               <p className="ai-wizard-subtitle">Indica la durata del viaggio</p>
@@ -1484,6 +1478,12 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
           {aiWizardStep === 3 && (
             <div className="ai-wizard-card">
+              <button className="icon-btn ai-wizard-close" onClick={aiWizardCancel} aria-label="Chiudi" title="Annulla"><X size={16} /></button>
+              <div className="ai-wizard-progress">
+                {[1,2,3,4,5].map((s) => (
+                  <div key={s} className={`ai-wizard-progress-line${aiWizardStep >= s ? " active" : ""}`} />
+                ))}
+              </div>
               <p className="ai-wizard-step-label">Passo 3 di 5</p>
               <h2 className="ai-wizard-title">Hai già le date?</h2>
               <p className="ai-wizard-subtitle">Scegli se hai già deciso le date o solo un periodo approssimativo</p>
@@ -1548,6 +1548,12 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
           {aiWizardStep === 4 && (
             <div className="ai-wizard-card">
+              <button className="icon-btn ai-wizard-close" onClick={aiWizardCancel} aria-label="Chiudi" title="Annulla"><X size={16} /></button>
+              <div className="ai-wizard-progress">
+                {[1,2,3,4,5].map((s) => (
+                  <div key={s} className={`ai-wizard-progress-line${aiWizardStep >= s ? " active" : ""}`} />
+                ))}
+              </div>
               <p className="ai-wizard-step-label">Passo 4 di 5</p>
               <h2 className="ai-wizard-title">Stile di viaggio</h2>
               <p className="ai-wizard-subtitle">Seleziona i tuoi interessi (puoi sceglierne più di uno)</p>
@@ -1585,6 +1591,12 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
           {aiWizardStep === 5 && (
             <div className="ai-wizard-card">
+              <button className="icon-btn ai-wizard-close" onClick={aiWizardCancel} aria-label="Chiudi" title="Annulla"><X size={16} /></button>
+              <div className="ai-wizard-progress">
+                {[1,2,3,4,5].map((s) => (
+                  <div key={s} className={`ai-wizard-progress-line${aiWizardStep >= s ? " active" : ""}`} />
+                ))}
+              </div>
               <p className="ai-wizard-step-label">Passo 5 di 5</p>
               <h2 className="ai-wizard-title">Riepilogo</h2>
               <p className="ai-wizard-subtitle">Controlla le tue scelte prima di procedere</p>
@@ -2645,6 +2657,24 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
     setOverIndex(null);
   };
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "s" && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+        setSuggestedActivities([
+          { name: "Museo Nazionale di Capodimonte", description: "Uno dei più importanti musei napoletani, con capolavori di Caravaggio, Raphael e Tiziano.", duration_minutes: 120 },
+          { name: "Spaccanapoli", description: "La strada storica che divide il centro antico, piena di botteghe, pizzerie e chiese antiche.", duration_minutes: 60 },
+          { name: "Complesso Monumentale di Santa Chiara", description: "Monastero gotico con splendido chiostro maiolicato e affreschi del XIV secolo.", duration_minutes: 45 },
+          { name: "Vomero e Castel Sant'Elmo", description: "Collina panoramica con il castello medievale e vista a 360 gradi sulla città e il golfo.", duration_minutes: 90 },
+          { name: "Pizzeria Da Michele", description: "Leggendaria pizzeria fondata nel 1870, patria della margherita e marinara.", duration_minutes: 40 },
+        ]);
+        setSelectedSuggestions([]);
+        setShowSuggestModal(true);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   return (
     <div className="day-editor" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <div key={`${iso}-${slideDir}`} className={`day-editor-slide slide-${slideDir}`}>
@@ -2733,7 +2763,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
             console.log("[AI Suggest] Parsed:", parsed);
             const activities = parsed?.activities || [];
             setSuggestedActivities(activities);
-            setSelectedSuggestions(activities.map((_, i) => i));
+            setSelectedSuggestions([]);
             setShowSuggestModal(true);
           } catch (err) {
             console.error("[AI Suggest] Error:", err.message);
@@ -2787,7 +2817,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
         <button className="export-btn" onClick={onClose}><Check size={14} /> Fatto</button>
       </div>
 
-      {showSuggestModal && (
+      {showSuggestModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowSuggestModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
@@ -2798,19 +2828,14 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
               {suggestedActivities.length === 0 ? (
                 <p className="empty-hint">Nessuna attività trovata.</p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="ticket-list">
                   {suggestedActivities.map((a, i) => {
                     const checked = selectedSuggestions.includes(i);
                     return (
                       <label
                         key={i}
-                        className="check-row"
-                        style={{
-                          padding: "10px 12px", borderRadius: 12, cursor: "pointer",
-                          background: checked ? "rgba(120,60,200,0.08)" : "rgba(255,255,255,0.3)",
-                          border: `1px solid ${checked ? "rgba(120,60,200,0.4)" : "var(--glass-border)"}`,
-                          transition: "all .15s",
-                        }}
+                        className={`ticket${checked ? " drop-target" : ""}`}
+                        style={{ cursor: "pointer", alignItems: "center" }}
                       >
                         <input
                           type="checkbox"
@@ -2820,12 +2845,16 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
                               prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
                             );
                           }}
-                          style={{ accentColor: "rgba(120,60,200,0.8)" }}
+                          style={{ accentColor: "rgba(120,60,200,0.8)", width: 18, height: 18, marginTop: 2 }}
                         />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", margin: 0 }}>{a.name}</p>
-                          <p style={{ fontSize: 11, color: "var(--muted)", margin: "2px 0 0", lineHeight: 1.4 }}>{a.description}</p>
-                          <p style={{ fontSize: 11, color: "var(--accent-dark)", margin: "4px 0 0", fontWeight: 500 }}>~{a.duration_minutes} min</p>
+                          <p className="ticket-body acts" style={{ fontWeight: 600 }}>{a.name}</p>
+                          <p className="ticket-body acts" style={{ fontSize: 12, color: "var(--muted)" }}>{a.description}</p>
+                          <span style={{
+                            display: "inline-block", marginTop: 4, fontSize: 10, fontWeight: 600,
+                            color: "var(--accent-dark)", background: "rgba(46,111,142,0.10)",
+                            padding: "2px 8px", borderRadius: 8,
+                          }}>~{a.duration_minutes} min</span>
                         </div>
                       </label>
                     );
@@ -2833,7 +2862,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
                 </div>
               )}
               {suggestedActivities.length > 0 && (
-                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
                   <button
                     className="ai-wizard-back"
                     onClick={() => setShowSuggestModal(false)}
@@ -2845,7 +2874,7 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
                     onClick={() => {
                       const toAdd = selectedSuggestions
                         .filter((i) => suggestedActivities[i])
-                        .map((i) => `${suggestedActivities[i].name} (${suggestedActivities[i].duration_minutes} min)`);
+                        .map((i) => suggestedActivities[i].name);
                       const current = data.activities.filter(Boolean);
                       onChange({ activities: [...current, ...toAdd] });
                       setShowSuggestModal(false);
@@ -2860,7 +2889,8 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </div>
     </div>
