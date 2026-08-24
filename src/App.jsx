@@ -1044,7 +1044,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
               </div>
             )}
             {view === "launcher" && (
-              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} />
+              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} onNavigateToPlanner={(id) => { setCurrentTripId(id); setView("planner"); }} />
             )}
         {view === "planner" && currentTripId && (
           <PlannerView
@@ -1061,7 +1061,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   );
 }
 
-function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchive, onImport, user, onLogout }) {
+function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchive, onImport, user, onLogout, onNavigateToPlanner }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
@@ -1205,8 +1205,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       }
       onImport([{ id, title, createdAt: Date.now() }]);
       console.log("[AI Wizard] Done — navigating to planner");
-      setCurrentTripId(id);
-      setView("planner");
+      onNavigateToPlanner(id);
     } catch (err) {
       console.error("[AI Wizard] Error:", err.message);
       window.alert("Si è verificato un errore durante la generazione dell'itinerario. Riprova più tardi.");
