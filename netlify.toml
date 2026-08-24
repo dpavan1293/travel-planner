@@ -3,7 +3,8 @@
   publish = "dist"
   functions = "netlify/functions"
 
-[functions]
+[[functions]]
+  name = "itinerary"
   timeout = 120
 
 # Export pubblico: /export/<tripId> serve l'itinerario come pagina HTML (funzione serverless)
