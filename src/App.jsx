@@ -455,6 +455,15 @@ const SHARED_STYLES = `
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .ai-generating-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  }
+  .ai-generating-overlay .spinner { width: 36px; height: 36px; border-width: 4px; }
+  .ai-generating-text { font-size: 15px; font-weight: 500; color: var(--ink); }
+  .ai-generating-sub { font-size: 12px; color: var(--muted); }
+
   .error-banner {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     background: rgba(193,80,60,0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
@@ -1155,6 +1164,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
         travel_dates: aiDateMode === "exact" ? formatWizardDates() : null,
         travel_style: aiStyles,
       };
+      console.log("[AI Wizard] Sending payload:", payload);
       const res = await fetch("/.netlify/functions/itinerary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1162,11 +1172,11 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       });
       if (!res.ok) throw new Error(`Errore ${res.status}`);
       const raw = await res.json();
-      console.log("AI itinerary raw response:", raw);
+      console.log("[AI Wizard] Raw response received, length:", JSON.stringify(raw).length);
 
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
       const data = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
-      console.log("AI itinerary parsed:", data);
+      console.log("[AI Wizard] Parsed trip, days:", Object.keys(data?.days || {}).length);
 
       if (!data || !data.days || typeof data.days !== "object") {
         throw new Error("Formato risposta AI non valido: manca l'oggetto 'days'");
@@ -1177,12 +1187,28 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       if (!data.extras) data.extras = [];
 
       const id = uid();
-      await storage.set(`trip:${id}`, JSON.stringify(data));
+      try {
+        await storage.set(`trip:${id}`, JSON.stringify(data));
+        console.log("[AI Wizard] Trip saved to storage, id:", id);
+      } catch (storageErr) {
+        console.error("[AI Wizard] Storage save failed:", storageErr.message);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        window.alert("Salvataggio non riuscito. Il file JSON è stato scaricato. Puoi importarlo manualmente dalla scheda viaggi.");
+        aiWizardCancel();
+        return;
+      }
       onImport([{ id, title, createdAt: Date.now() }]);
+      console.log("[AI Wizard] Done — navigating to planner");
       setCurrentTripId(id);
       setView("planner");
     } catch (err) {
-      console.error("AI generation error:", err);
+      console.error("[AI Wizard] Error:", err.message);
       window.alert("Si è verificato un errore durante la generazione dell'itinerario. Riprova più tardi.");
     } finally {
       setAiGenerating(false);
@@ -1714,6 +1740,14 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {aiGenerating && (
+        <div className="ai-generating-overlay">
+          <span className="spinner" aria-hidden="true"></span>
+          <span className="ai-generating-text">Generazione itinerario in corso...</span>
+          <span className="ai-generating-sub">L'AI sta preparando il tuo viaggio, potrebbe volerci qualche minuto</span>
         </div>
       )}
     </div>
