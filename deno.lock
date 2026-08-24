@@ -17,6 +17,7 @@
         "npm:@vitejs/plugin-react@^6.0.4",
         "npm:lucide-react@^1.28.0",
         "npm:netlify-identity-widget@^2.0.3",
+        "npm:openai@^7.5.0",
         "npm:oxlint@^1.75.0",
         "npm:react-dom@^19.2.8",
         "npm:react@^19.2.8",

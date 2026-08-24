@@ -361,6 +361,14 @@ const SHARED_STYLES = `
     box-shadow: 0 6px 20px rgba(15,30,45,0.1);
   }
   .ticket:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .ticket.dragging { opacity: 0.45; }
+  .ticket.drop-target { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(46,111,142,0.18), 0 6px 20px rgba(15,30,45,0.1); }
+  .ticket-grip {
+    position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+    display: flex; align-items: center; padding: 6px 4px; color: var(--muted);
+    cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; opacity: 0.65;
+  }
+  .ticket-grip:active { cursor: grabbing; opacity: 1; }
   @keyframes ticketNew {
     0% { opacity: 0; transform: translateY(10px) scale(.97); }
     40% { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(46,111,142,0.16), 0 6px 20px rgba(15,30,45,0.1); }
@@ -376,7 +384,7 @@ const SHARED_STYLES = `
   .date-badge .wd { font-family: var(--font-text); font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .date-badge .dnum { font-family: var(--font-display); font-size: 23px; font-weight: 650; line-height: 1; margin: 3px 0; }
   .date-badge .mo { font-family: var(--font-text); font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-  .ticket-body { flex: 1; padding: 2px 0; min-width: 0; }
+  .ticket-body { flex: 1; padding: 2px 22px 2px 0; min-width: 0; }
   .ticket-body .place-title { font-family: var(--font-display); font-size: 15.5px; font-weight: 600; margin: 0 0 3px; color: var(--ink); }
   .ticket-body .cat { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin: 0 0 4px; }
   .ticket-body .acts { font-size: 13.5px; color: var(--ink); margin: 0 0 4px; line-height: 1.4; }
@@ -493,6 +501,7 @@ const SHARED_STYLES = `
     background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border: 1.5px dashed var(--glass-border); border-radius: 20px; padding: 26px; margin-bottom: 24px; text-align: center;
   }
+  .create-card-title { font-family: var(--font-page-title); font-size: 24px; font-weight: 400; margin: 0 0 14px 0; }
   .create-card .field-label { margin-bottom: 10px; text-align: center; }
   .create-stack { display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .create-stack .tp-input { width: 100%; font-size: 16px; padding: 11px 13px; text-align: center; }
@@ -533,6 +542,146 @@ const SHARED_STYLES = `
   }
   .new-trip-btn:hover { border-color: var(--accent); color: var(--accent-dark); }
   .tp-card .new-trip-btn { margin-bottom: 0; margin-top: 14px; }
+  .home-cta-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-bottom: 24px; }
+  .home-cta-stack .new-trip-btn { margin-bottom: 0; }
+  /* --- Scelta creazione viaggio --- */
+  .creation-choice {
+    background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid var(--glass-border); border-radius: 20px; padding: 28px 24px; margin-bottom: 24px; text-align: center;
+  }
+  .creation-choice-title {
+    font-family: var(--font-page-title); font-size: 24px; font-weight: 400; margin: 0px 0px 5px 0px;
+  }
+  .creation-choice-subtitle {
+    font-size: 12px; color: var(--muted); margin: 0 0 18px;
+  }
+  .creation-options { display: flex; flex-direction: column; gap: 10px; }
+  .creation-option {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border); border-radius: 16px; padding: 16px 14px;
+    cursor: pointer; text-align: left; transition: border-color .15s, transform .15s;
+  }
+  .creation-option:hover { border-color: var(--accent); transform: translateY(-1px); }
+  @media (prefers-reduced-motion: reduce) { .creation-option:hover { transform: none; } }
+  .creation-option-text { flex: 1; min-width: 0; }
+  .creation-option-title {
+    display: block; font-family: var(--font-display); font-weight: 600; margin-bottom: 3px;
+  }
+  .creation-option-icon { margin-right: 4px; }
+  .creation-option-desc { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+  .creation-option-arrow {
+    font-size: 20px; color: var(--muted); flex-shrink: 0; transition: color .15s;
+  }
+  .creation-option:hover .creation-option-arrow { color: var(--accent); }
+  .creation-option-ai {
+    background: linear-gradient(135deg, rgba(120,60,200,0.50), rgba(80,50,180,0.62));
+    border-color: rgba(120,60,200,0.3); color: #fff;
+  }
+  .creation-option-ai .creation-option-title { color: #fff; }
+  .creation-option-ai .creation-option-desc { color: rgba(255,255,255,0.8); }
+  .creation-option-ai .creation-option-arrow { color: rgba(255,255,255,0.7); }
+  .creation-option-ai:hover { border-color: rgba(120,60,200,0.6); transform: translateY(-1px); filter: brightness(1.08); }
+  @media (prefers-reduced-motion: reduce) { .creation-option-ai:hover { transform: none; } }
+  .creation-cancel {
+    display: inline-block; margin-top: 18px; border: none; background: none;
+    color: var(--muted); font-size: 13px; text-decoration: underline dotted; text-underline-offset: 3px;
+    cursor: pointer; font-family: var(--font-text);
+  }
+  .creation-cancel:hover { color: var(--accent-dark); }
+
+  /* --- AI Wizard --- */
+  .ai-wizard { width: 100%; max-width: 440px; margin: 0 auto; }
+  .ai-wizard-progress { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+  .ai-wizard-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25);
+    border: 1px solid var(--glass-border); transition: background .25s, transform .25s;
+  }
+  .ai-wizard-dot.active { background: linear-gradient(135deg, rgba(120,60,200,0.9), rgba(80,50,180,0.9)); transform: scale(1.2); }
+  .ai-wizard-card {
+    background: rgba(255,255,255,0.35); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid var(--glass-border); border-radius: 20px; padding: 28px 24px; text-align: center;
+  }
+  .ai-wizard-step-label { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+  .ai-wizard-title { font-family: var(--font-page-title); font-size: 24px; font-weight: 400; margin: 0 0 6px; }
+  .ai-wizard-subtitle { font-size: 14px; color: var(--muted); margin: 0 0 22px; }
+  .ai-wizard-input { width: 100%; font-size: 16px; padding: 12px 14px; text-align: center; box-sizing: border-box; }
+  .ai-wizard-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; gap: 10px; }
+  .ai-wizard-back {
+    border: none; background: none; color: var(--muted); font-size: 13px; cursor: pointer;
+    font-family: var(--font-text); padding: 8px 4px;
+  }
+  .ai-wizard-back:hover { color: var(--accent-dark); }
+  .ai-wizard-next {
+    border: none; border-radius: 14px; padding: 11px 28px; cursor: pointer; font-size: 14px; font-weight: 500;
+    background: linear-gradient(135deg, rgba(120,60,200,0.9), rgba(80,50,180,0.9));
+    color: #fff; font-family: var(--font-text); transition: filter .15s, transform .15s;
+  }
+  .ai-wizard-next:disabled { opacity: 0.4; cursor: not-allowed; }
+  .ai-wizard-next:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
+  @media (prefers-reduced-motion: reduce) { .ai-wizard-next:not(:disabled):hover { transform: none; } }
+  .ai-wizard-confirm {
+    background: linear-gradient(135deg, rgba(46,111,142,0.95), rgba(31,92,86,0.95));
+    box-shadow: 0 6px 18px rgba(32,79,102,0.28);
+  }
+
+  /* Date mode buttons */
+  .ai-wizard-date-options { display: flex; gap: 10px; margin-bottom: 18px; }
+  .ai-wizard-date-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px;
+    background: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border); border-radius: 14px; cursor: pointer; font-family: var(--font-text);
+    transition: border-color .15s, transform .15s;
+  }
+  .ai-wizard-date-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .ai-wizard-date-btn.selected { border-color: rgba(120,60,200,0.8); background: rgba(120,60,200,0.08); }
+  @media (prefers-reduced-motion: reduce) { .ai-wizard-date-btn:hover { transform: none; } }
+  .ai-wizard-date-icon { font-size: 22px; }
+  .ai-wizard-date-label { font-size: 13px; font-weight: 500; color: var(--ink); }
+
+  /* Date picker fields */
+  .ai-wizard-date-fields { display: flex; gap: 12px; margin-bottom: 18px; width: 100%; }
+  .ai-wizard-date-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .ai-wizard-date-field label { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .ai-wizard-date-field input[type="date"] { width: 100%; font-size: 15px; padding: 10px 12px; font-family: var(--font-text); background: rgba(255,255,255,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--ink); box-sizing: border-box; }
+  .ai-wizard-date-field input[type="date"]:focus { outline: none; border-color: var(--accent); }
+
+  /* Month grid */
+  .ai-wizard-month-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 14px; }
+  .ai-wizard-month-nav-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--ink); transition: border-color .15s; }
+  .ai-wizard-month-nav-btn:hover { border-color: var(--accent); }
+  .ai-wizard-month-nav-label { font-size: 15px; font-weight: 600; color: var(--ink); min-width: 60px; text-align: center; }
+  .ai-wizard-month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; width: 100%; }
+  .ai-wizard-month-cell { padding: 12px 6px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.3); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--ink); text-align: center; transition: all .15s; font-family: var(--font-text); }
+  .ai-wizard-month-cell:hover { border-color: var(--accent); background: rgba(120,60,200,0.05); }
+  .ai-wizard-month-cell.selected { border-color: rgba(120,60,200,0.8); background: rgba(120,60,200,0.12); color: rgba(120,60,200,1); font-weight: 600; }
+
+  /* Style grid */
+  .ai-wizard-styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ai-wizard-style-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px;
+    background: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border); border-radius: 14px; cursor: pointer; font-family: var(--font-text);
+    transition: border-color .15s, transform .15s;
+  }
+  .ai-wizard-style-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .ai-wizard-style-btn.selected { border-color: rgba(120,60,200,0.8); background: rgba(120,60,200,0.08); }
+  @media (prefers-reduced-motion: reduce) { .ai-wizard-style-btn:hover { transform: none; } }
+  .ai-wizard-style-icon { font-size: 20px; }
+  .ai-wizard-style-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+
+  /* Summary */
+  .ai-wizard-summary {
+    background: rgba(255,255,255,0.3); border-radius: 14px; padding: 16px; text-align: left;
+    border: 1px solid var(--glass-border);
+  }
+  .ai-wizard-summary-row {
+    display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  .ai-wizard-summary-row:last-child { border-bottom: none; }
+  .ai-wizard-summary-label { font-size: 12.5px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .03em; }
+  .ai-wizard-summary-value { font-size: 14px; font-weight: 500; color: var(--ink); text-align: right; max-width: 60%; }
 
   /* --- Ricerca luogo (geocoding) --- */
   .loc-search { position: relative; min-width: 0; }
@@ -635,6 +784,15 @@ const SHARED_STYLES = `
     .extra-card { padding: 13px; margin-top: 10px; }
     .extra-card-head { margin-bottom: 9px; }
     .create-card { padding: 16px; }
+    .creation-choice { padding: 20px 16px; }
+    .creation-choice-title { font-size: 20px; }
+    .creation-option { padding: 14px 12px; }
+    .ai-wizard-card { padding: 20px 16px; }
+    .ai-wizard-title { font-size: 20px; }
+    .ai-wizard-styles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .ai-wizard-style-btn { padding: 12px 4px; }
+    .ai-wizard-style-icon { font-size: 18px; }
+    .ai-wizard-style-label { font-size: 11px; }
     .trip-list { gap: 8px; }
     .trip-card { padding: 11px 13px; gap: 11px; }
     .ticket, .extra-card { content-visibility: auto; contain-intrinsic-size: auto 100px; }
@@ -657,7 +815,7 @@ const SHARED_STYLES = `
     .no-print { display: none !important; }
     .tp-title-input { border: none !important; }
     .tp-card { background: #fff; backdrop-filter: none; box-shadow: none; border: none; border-radius: 0; padding: 0; margin-bottom: 22px; break-inside: avoid; }
-    .icon-btn, .add-line-btn, .grip, .add-extra-wrap, .danger-link, .day-editor, .cal-grid, .cal-header, .range-zone { display: none !important; }
+    .icon-btn, .add-line-btn, .grip, .ticket-grip, .add-extra-wrap, .danger-link, .day-editor, .cal-grid, .cal-header, .range-zone { display: none !important; }
     .map-places, .map-card-head, .loc-search { display: none !important; }
     .tp-input, .tp-textinput, .extra-title-input { border: none !important; background: transparent !important; backdrop-filter: none !important; padding: 2px 0 !important; }
     .ticket, .extra-card { background: #fff; backdrop-filter: none; border: 1px solid #ddd; break-inside: avoid; }
@@ -895,7 +1053,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
 }
 
 function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchive, onImport, user, onLogout }) {
-  const [showForm, setShowForm] = useState(trips.length === 0);
+  const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -908,6 +1066,17 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
   const [filter, setFilter] = useState("upcoming");
   const [menuTripId, setMenuTripId] = useState(null);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showCreationChoice, setShowCreationChoice] = useState(trips.length === 0);
+  const [aiWizardStep, setAiWizardStep] = useState(0);
+  const [aiDestination, setAiDestination] = useState("");
+  const [aiDays, setAiDays] = useState("");
+  const [aiDateMode, setAiDateMode] = useState("");
+  const [aiExactStart, setAiExactStart] = useState("");
+  const [aiExactEnd, setAiExactEnd] = useState("");
+  const [aiSelectedMonth, setAiSelectedMonth] = useState(-1);
+  const [aiPeriodYear, setAiPeriodYear] = useState(new Date().getFullYear());
+  const [aiStyles, setAiStyles] = useState([]);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || "";
   const initials = (() => {
@@ -934,6 +1103,78 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
     onCreate(name);
     setName("");
     setShowForm(false);
+  };
+
+  const handleCreateWithAI = () => {
+    setShowCreationChoice(false);
+    setAiWizardStep(1);
+  };
+
+  const aiWizardBack = () => {
+    setAiWizardStep((s) => Math.max(0, s - 1));
+  };
+
+  const aiWizardCancel = () => {
+    setAiWizardStep(0);
+    setAiDestination("");
+    setAiDays("");
+    setAiDateMode("");
+    setAiExactStart("");
+    setAiExactEnd("");
+    setAiSelectedMonth(-1);
+    setAiPeriodYear(new Date().getFullYear());
+    setAiStyles([]);
+    setShowCreationChoice(true);
+  };
+
+  const formatWizardDates = () => {
+    if (aiDateMode === "exact") {
+      if (!aiExactStart) return "";
+      const fmt = (ds) => {
+        const d = new Date(ds + "T00:00:00");
+        return `${d.getDate()} ${MONTHS[d.getMonth()].toLowerCase()} ${d.getFullYear()}`;
+      };
+      if (aiExactEnd && aiExactEnd !== aiExactStart) {
+        return `${fmt(aiExactStart)} – ${fmt(aiExactEnd)}`;
+      }
+      return fmt(aiExactStart);
+    }
+    if (aiDateMode === "period" && aiSelectedMonth >= 0) {
+      return `${MONTHS[aiSelectedMonth]} ${aiPeriodYear}`;
+    }
+    return "";
+  };
+
+  const aiWizardConfirm = async () => {
+    setAiGenerating(true);
+    try {
+      const payload = {
+        destination: aiDestination,
+        duration: Number(aiDays),
+        travel_period: aiDateMode === "period" ? formatWizardDates() : null,
+        travel_dates: aiDateMode === "exact" ? formatWizardDates() : null,
+        travel_style: aiStyles,
+      };
+      const res = await fetch("/.netlify/functions/itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(`Errore ${res.status}`);
+      const data = await res.json();
+      console.log("AI itinerary response:", data);
+      window.alert("Itinerario generato con successo! (dettagli in console)");
+      aiWizardCancel();
+    } catch (err) {
+      console.error("AI generation error:", err);
+      window.alert("Si è verificato un errore durante la generazione dell'itinerario. Riprova più tardi.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const toggleAiStyle = (style) => {
+    setAiStyles((prev) => prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]);
   };
 
   const openExportPicker = () => {
@@ -1068,8 +1309,222 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
       <div className="launcher-content">
       <div className={`new-trip-slot${filter === "archived" ? " hidden" : ""}`}>
-      {showForm ? (
+      {aiWizardStep > 0 ? (
+        <div className="ai-wizard">
+          <div className="ai-wizard-progress">
+            {[1,2,3,4,5].map((s) => (
+              <div key={s} className={`ai-wizard-dot${aiWizardStep >= s ? " active" : ""}`} />
+            ))}
+          </div>
+
+          {aiWizardStep === 1 && (
+            <div className="ai-wizard-card">
+              <p className="ai-wizard-step-label">Passo 1 di 5</p>
+              <h2 className="ai-wizard-title">Dove vuoi andare?</h2>
+              <p className="ai-wizard-subtitle">Inserisci la destinazione del tuo viaggio</p>
+              <input
+                className="tp-input ai-wizard-input"
+                value={aiDestination}
+                placeholder="Es. Giappone, Bali, New York..."
+                onChange={(e) => setAiDestination(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && aiDestination.trim() && setAiWizardStep(2)}
+                autoFocus
+              />
+              <div className="ai-wizard-actions">
+                <button className="ai-wizard-back" onClick={aiWizardCancel}>Indietro</button>
+                <button className="ai-wizard-next" disabled={!aiDestination.trim()} onClick={() => setAiWizardStep(2)}>Avanti</button>
+              </div>
+            </div>
+          )}
+
+          {aiWizardStep === 2 && (
+            <div className="ai-wizard-card">
+              <p className="ai-wizard-step-label">Passo 2 di 5</p>
+              <h2 className="ai-wizard-title">Quanti giorni?</h2>
+              <p className="ai-wizard-subtitle">Indica la durata del viaggio</p>
+              <input
+                type="number"
+                min="1"
+                className="tp-input ai-wizard-input"
+                value={aiDays}
+                placeholder="Es. 7"
+                onChange={(e) => setAiDays(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && aiDays && Number(aiDays) > 0 && setAiWizardStep(3)}
+                autoFocus
+              />
+              <div className="ai-wizard-actions">
+                <button className="ai-wizard-back" onClick={aiWizardBack}>Indietro</button>
+                <button className="ai-wizard-next" disabled={!aiDays || Number(aiDays) <= 0} onClick={() => setAiWizardStep(3)}>Avanti</button>
+              </div>
+            </div>
+          )}
+
+          {aiWizardStep === 3 && (
+            <div className="ai-wizard-card">
+              <p className="ai-wizard-step-label">Passo 3 di 5</p>
+              <h2 className="ai-wizard-title">Hai già le date?</h2>
+              <p className="ai-wizard-subtitle">Scegli se hai già deciso le date o solo un periodo approssimativo</p>
+              <div className="ai-wizard-date-options">
+                <button
+                  className={`ai-wizard-date-btn${aiDateMode === "exact" ? " selected" : ""}`}
+                  onClick={() => { setAiDateMode("exact"); setAiExactStart(""); setAiExactEnd(""); setAiSelectedMonth(-1); }}
+                >
+                  <span className="ai-wizard-date-icon">📅</span>
+                  <span className="ai-wizard-date-label">So le date esatte</span>
+                </button>
+                <button
+                  className={`ai-wizard-date-btn${aiDateMode === "period" ? " selected" : ""}`}
+                  onClick={() => { setAiDateMode("period"); setAiExactStart(""); setAiExactEnd(""); setAiSelectedMonth(-1); }}
+                >
+                  <span className="ai-wizard-date-icon">🗓️</span>
+                  <span className="ai-wizard-date-label">Solo un periodo</span>
+                </button>
+              </div>
+              {aiDateMode === "exact" && (
+                <div className="ai-wizard-date-fields">
+                  <div className="ai-wizard-date-field">
+                    <label>Da</label>
+                    <input type="date" value={aiExactStart} onChange={(e) => { setAiExactStart(e.target.value); if (aiExactEnd && e.target.value > aiExactEnd) setAiExactEnd(""); }} />
+                  </div>
+                  <div className="ai-wizard-date-field">
+                    <label>A</label>
+                    <input type="date" value={aiExactEnd} min={aiExactStart || undefined} onChange={(e) => setAiExactEnd(e.target.value)} />
+                  </div>
+                </div>
+              )}
+              {aiDateMode === "period" && (
+                <>
+                  <div className="ai-wizard-month-nav">
+                    <button className="ai-wizard-month-nav-btn" onClick={() => setAiPeriodYear((y) => y - 1)}>‹</button>
+                    <span className="ai-wizard-month-nav-label">{aiPeriodYear}</span>
+                    <button className="ai-wizard-month-nav-btn" onClick={() => setAiPeriodYear((y) => y + 1)}>›</button>
+                  </div>
+                  <div className="ai-wizard-month-grid">
+                    {MONTHS.map((m, i) => (
+                      <button
+                        key={i}
+                        className={`ai-wizard-month-cell${aiSelectedMonth === i ? " selected" : ""}`}
+                        onClick={() => setAiSelectedMonth(i)}
+                      >
+                        {m.slice(0, 3)}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div className="ai-wizard-actions">
+                <button className="ai-wizard-back" onClick={aiWizardBack}>Indietro</button>
+                <button
+                  className="ai-wizard-next"
+                  disabled={aiDateMode === "exact" ? !aiExactStart : aiSelectedMonth < 0}
+                  onClick={() => setAiWizardStep(4)}
+                >Avanti</button>
+              </div>
+            </div>
+          )}
+
+          {aiWizardStep === 4 && (
+            <div className="ai-wizard-card">
+              <p className="ai-wizard-step-label">Passo 4 di 5</p>
+              <h2 className="ai-wizard-title">Stile di viaggio</h2>
+              <p className="ai-wizard-subtitle">Seleziona i tuoi interessi (puoi sceglierne più di uno)</p>
+              <div className="ai-wizard-styles">
+                {[
+                  { id: "animals", icon: "🐾", label: "Animali" },
+                  { id: "nature", icon: "🌿", label: "Natura" },
+                  { id: "sport", icon: "⚡", label: "Sport" },
+                  { id: "culture", icon: "🏛️", label: "Cultura" },
+                  { id: "city", icon: "🏙️", label: "Città" },
+                  { id: "shopping", icon: "🛍️", label: "Shopping" },
+                  { id: "food", icon: "🍽️", label: "Cibo" },
+                  { id: "relax", icon: "🏖️", label: "Relax" },
+                  { id: "nightlife", icon: "🌙", label: "Vita notturna" },
+                  { id: "history", icon: "🏰", label: "Storia" },
+                  { id: "art", icon: "🎨", label: "Arte" },
+                  { id: "adventure", icon: "🧗", label: "Avventura" },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    className={`ai-wizard-style-btn${aiStyles.includes(s.id) ? " selected" : ""}`}
+                    onClick={() => toggleAiStyle(s.id)}
+                  >
+                    <span className="ai-wizard-style-icon">{s.icon}</span>
+                    <span className="ai-wizard-style-label">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="ai-wizard-actions">
+                <button className="ai-wizard-back" onClick={aiWizardBack}>Indietro</button>
+                <button className="ai-wizard-next" disabled={aiStyles.length === 0} onClick={() => setAiWizardStep(5)}>Avanti</button>
+              </div>
+            </div>
+          )}
+
+          {aiWizardStep === 5 && (
+            <div className="ai-wizard-card">
+              <p className="ai-wizard-step-label">Passo 5 di 5</p>
+              <h2 className="ai-wizard-title">Riepilogo</h2>
+              <p className="ai-wizard-subtitle">Controlla le tue scelte prima di procedere</p>
+              <div className="ai-wizard-summary">
+                <div className="ai-wizard-summary-row">
+                  <span className="ai-wizard-summary-label">Destinazione</span>
+                  <span className="ai-wizard-summary-value">{aiDestination}</span>
+                </div>
+                <div className="ai-wizard-summary-row">
+                  <span className="ai-wizard-summary-label">Durata</span>
+                  <span className="ai-wizard-summary-value">{aiDays} giorni</span>
+                </div>
+                <div className="ai-wizard-summary-row">
+                  <span className="ai-wizard-summary-label">{aiDateMode === "exact" ? "Date" : "Periodo"}</span>
+                  <span className="ai-wizard-summary-value">{formatWizardDates()}</span>
+                </div>
+                <div className="ai-wizard-summary-row">
+                  <span className="ai-wizard-summary-label">Stili</span>
+                  <span className="ai-wizard-summary-value">{aiStyles.map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}</span>
+                </div>
+              </div>
+              <div className="ai-wizard-actions">
+                <button className="ai-wizard-back" onClick={aiWizardBack}>Indietro</button>
+                <button className="ai-wizard-next ai-wizard-confirm" onClick={aiWizardConfirm} disabled={aiGenerating}>
+                  {aiGenerating ? "Generazione..." : "Procedi"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : showCreationChoice ? (
+        <div className="creation-choice">
+          <h2 className="creation-choice-title">Crea nuovo viaggio</h2>
+          <p className="creation-choice-subtitle">Come vuoi creare il tuo viaggio?</p>
+          <div className="creation-options">
+            <button
+              className="creation-option"
+              onClick={() => { setShowCreationChoice(false); setShowForm(true); }}
+            >
+              <div className="creation-option-text">
+                <span className="creation-option-title"><span className="creation-option-icon">+</span> Crea manualmente</span>
+                <span className="creation-option-desc">Inserisci il nome del viaggio e costruisci il tuo itinerario da zero.</span>
+              </div>
+              <span className="creation-option-arrow">›</span>
+            </button>
+            <button
+              className="creation-option creation-option-ai"
+              onClick={handleCreateWithAI}
+            >
+              <div className="creation-option-text">
+                <span className="creation-option-title"><span className="creation-option-icon">✨</span> Crea con AI</span>
+                <span className="creation-option-desc">Ti guidiamo nella creazione dell'itinerario passo passo.</span>
+              </div>
+              <span className="creation-option-arrow">›</span>
+            </button>
+          </div>
+          {trips.length > 0 && (
+            <button className="creation-cancel" onClick={() => setShowCreationChoice(false)}>Annulla</button>
+          )}
+        </div>
+      ) : showForm ? (
         <div className="create-card">
+          <h2 className="create-card-title">Crea nuovo viaggio</h2>
           <p className="field-label">Nome del viaggio</p>
           <div className="create-stack">
             <input
@@ -1081,15 +1536,15 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
               onKeyDown={(e) => e.key === "Enter" && submit()}
             />
             <button className="export-btn" onClick={submit}>Crea viaggio</button>
-            {trips.length > 0 && (
-              <button className="cover-toggle-link" onClick={() => setShowForm(false)}>Annulla</button>
-            )}
+              <button className="cover-toggle-link" onClick={() => { setShowForm(false); setShowCreationChoice(true); }}>Annulla</button>
           </div>
         </div>
       ) : (
-        <button className="new-trip-btn" onClick={() => { if (filter === "archived") setFilter("upcoming"); setShowForm(true); }}>
-          <Plus size={15} /> Nuovo viaggio
-        </button>
+        <div className="home-cta-stack">
+          <button className="new-trip-btn" onClick={() => { if (filter === "archived") setFilter("upcoming"); setShowCreationChoice(true); }}>
+            <Plus size={15} /> Nuovo viaggio
+          </button>
+        </div>
       )}
       </div>
 
@@ -1262,6 +1717,12 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
   const scrollOnSelectRef = useRef(false);
   const [daySlideDir, setDaySlideDir] = useState("next");
   const [newDayIso, setNewDayIso] = useState(null);
+  const [ticketDragFrom, setTicketDragFrom] = useState(null);
+  const [ticketOverIndex, setTicketOverIndex] = useState(null);
+  const ticketListRef = useRef(null);
+  const ticketDragRef = useRef(null);
+  const ticketOverIdxRef = useRef(null);
+  const suppressTicketClickRef = useRef(false);
 
   useEffect(() => {
     if (selectedDate && scrollOnSelectRef.current && dayEditorRef.current) {
@@ -1423,6 +1884,83 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       return next;
     });
     if (selectedDate === isoToRemove) setSelectedDate(null);
+  };
+
+  // Riordina le giornate spostando "fromIso" nella posizione attualmente occupata
+  // da "toIso": l'ordine delle schede diventa la nuova sequenza e le date vengono
+  // riassegnate in modo consecutivo a partire dalla data di partenza del viaggio.
+  const reorderDay = (fromIso, toIso) => {
+    const count = sortedDayEntries.length;
+    if (count < 2) return;
+    const fromIdx = sortedDayEntries.findIndex(([iso]) => iso === fromIso);
+    const toIdx = sortedDayEntries.findIndex(([iso]) => iso === toIso);
+    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+    const values = sortedDayEntries.map(([, v]) => v);
+    const [moved] = values.splice(fromIdx, 1);
+    values.splice(toIdx, 0, moved);
+    const cur = fromISO(sortedDayEntries[0][0]);
+    const newKeys = values.map(() => { const k = toISO(cur); cur.setDate(cur.getDate() + 1); return k; });
+    const next = {};
+    values.forEach((v, i) => { next[newKeys[i]] = v; });
+    setDays(next);
+    // Il giorno selezionato segue la propria scheda anche se cambia chiave/data.
+    const selIdx = sortedDayEntries.findIndex(([iso]) => iso === selectedDate);
+    if (selIdx >= 0 && selectedDate !== newKeys[selIdx]) setSelectedDate(newKeys[selIdx]);
+  };
+
+  // Drag & drop delle schede itinerario: parte dalla maniglia (pointer events,
+  // così funziona anche su touch) e al rilascio riordina le giornate.
+  const beginTicketDrag = (e, iso) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const fromIdx = sortedDayEntries.findIndex(([k]) => k === iso);
+    if (fromIdx < 0 || sortedDayEntries.length < 2) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const st = { iso, fromIdx, active: false };
+    ticketDragRef.current = st;
+    ticketOverIdxRef.current = null;
+
+    const onMove = (ev) => {
+      if (!st.active) {
+        if (Math.abs(ev.clientY - startY) < 6 && Math.abs(ev.clientX - startX) < 6) return;
+        st.active = true;
+        setTicketDragFrom(st.fromIdx);
+      }
+      const nodes = ticketListRef.current ? Array.from(ticketListRef.current.querySelectorAll("[data-ticket-iso]")) : [];
+      let best = null;
+      let bestDist = Infinity;
+      nodes.forEach((node, i) => {
+        if (i === st.fromIdx) return;
+        const r = node.getBoundingClientRect();
+        const dist = Math.abs(ev.clientY - (r.top + r.height / 2));
+        if (dist < bestDist) { bestDist = dist; best = i; }
+      });
+      ticketOverIdxRef.current = best;
+      setTicketOverIndex(best);
+    };
+    const finish = (commit) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onCancel);
+      ticketDragRef.current = null;
+      if (st.active && commit && ticketOverIdxRef.current != null && ticketOverIdxRef.current !== st.fromIdx) {
+        reorderDay(st.iso, sortedDayEntries[ticketOverIdxRef.current][0]);
+      }
+      // Un click segue il pointerup: se abbiamo trascinato, non aprire la giornata.
+      if (st.active) {
+        suppressTicketClickRef.current = true;
+        setTimeout(() => { suppressTicketClickRef.current = false; }, 0);
+      }
+      setTicketDragFrom(null);
+      setTicketOverIndex(null);
+      ticketOverIdxRef.current = null;
+    };
+    const onUp = () => finish(true);
+    const onCancel = () => finish(false);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onCancel);
   };
 
   const addDay = () => {
@@ -1822,18 +2360,32 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
       </div>
 
       <div className="tp-card">
-        <p className="tp-section-label">Itinerario</p>
+        <p className="tp-section-label">
+          Itinerario
+          {sortedDayEntries.length > 1 && <span className="field-hint"> — trascina le schede per riordinare le giornate</span>}
+        </p>
         {sortedDayEntries.length === 0 ? (
           <p className="empty-hint">Nessuna giornata ancora. Fissa le date con "Crea più giorni insieme" per iniziare.</p>
         ) : (
           <>
-            <div className="ticket-list">
-              {sortedDayEntries.map(([iso, entry]) => {
+            <div className="ticket-list" ref={ticketListRef}>
+              {sortedDayEntries.map(([iso, entry], i) => {
                 const d = fromISO(iso);
                 const cats = (entry.categories || []).map((cid) => allCategories.find((c) => c.id === cid)).filter(Boolean);
                 const activities = entry.activities.filter((a) => a.trim());
                 return (
-                  <div key={iso} id={`ticket-${iso}`} className={`ticket${iso === newDayIso ? " ticket-new" : ""}`} onClick={() => { scrollOnSelectRef.current = true; setSelectedDate(iso); }}>
+                  <div
+                    key={iso}
+                    id={`ticket-${iso}`}
+                    data-ticket-iso={iso}
+                    className={[
+                      "ticket",
+                      iso === newDayIso ? "ticket-new" : "",
+                      ticketDragFrom === i ? "dragging" : "",
+                      ticketDragFrom != null && ticketOverIndex === i && ticketOverIndex !== ticketDragFrom ? "drop-target" : "",
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => { if (suppressTicketClickRef.current) return; scrollOnSelectRef.current = true; setSelectedDate(iso); }}
+                  >
                     <div className="date-badge">
                       <span className="wd">{WEEKDAYS_SHORT[(d.getDay() + 6) % 7]}</span>
                       <span className="dnum">{d.getDate()}</span>
@@ -1851,6 +2403,14 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
                         <p className="stay"><Moon size={12} /> {entry.accommodation}</p>
                       )}
                     </div>
+                    <span
+                      className="ticket-grip"
+                      title="Trascina per riordinare"
+                      aria-label="Trascina per riordinare la giornata"
+                      onPointerDown={(e) => beginTicketDrag(e, iso)}
+                    >
+                      <GripVertical size={15} />
+                    </span>
                   </div>
                 );
               })}

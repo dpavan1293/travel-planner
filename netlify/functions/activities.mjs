@@ -5,18 +5,35 @@ const client = new OpenAI({
 });
 
 export default async (req) => {
+
   try {
-    const body = await req.json();
+
+    const {
+      place,
+      existingActivities = []
+    } = await req.json();
 
     const response = await client.responses.create({
-      model: "gpt-5.4-mini",
-      input: body.message
+
+      prompt: {
+        id: "pmpt_6a8842f44c6c8193b82b31ea2222aa1609a9b6d96cde6663"
+      },
+
+      input: [
+        {
+          role: "user",
+          content: JSON.stringify({
+            date,
+            destination,
+			existingActivities
+          })
+        }
+      ]
+
     });
 
     return new Response(
-      JSON.stringify({
-        reply: response.output_text
-      }),
+      response.output_text,
       {
         status: 200,
         headers: {
@@ -26,11 +43,12 @@ export default async (req) => {
     );
 
   } catch (error) {
+
     console.error(error);
 
     return new Response(
       JSON.stringify({
-        error: "Errore nella chiamata OpenAI"
+        error: "Errore durante la generazione dei suggerimenti"
       }),
       {
         status: 500,
@@ -39,5 +57,6 @@ export default async (req) => {
         }
       }
     );
+
   }
 };
