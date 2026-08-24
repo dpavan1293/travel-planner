@@ -10,8 +10,11 @@ export default async (req) => {
 
     const {
       place,
+      date,
       existingActivities = []
     } = await req.json();
+
+    console.log("[activities] START", { place, date, existingActivities });
 
     const response = await client.responses.create({
 
@@ -24,13 +27,15 @@ export default async (req) => {
           role: "user",
           content: JSON.stringify({
             date,
-            destination,
-			existingActivities
+            destination: place,
+            existingactivities: existingActivities
           })
         }
       ]
 
     });
+
+    console.log("[activities] DONE —", response.output_text.length, "chars");
 
     return new Response(
       response.output_text,
@@ -44,7 +49,7 @@ export default async (req) => {
 
   } catch (error) {
 
-    console.error(error);
+    console.error("[activities] ERROR:", error.message);
 
     return new Response(
       JSON.stringify({

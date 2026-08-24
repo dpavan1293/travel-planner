@@ -302,12 +302,15 @@ const SHARED_STYLES = `
 
   .field-label { font-size: 12px; color: var(--muted); margin: 0 0 6px; font-weight: 500; }
   .ai-suggest-btn {
-    display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--glass-border);
-    background: var(--glass); backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
-    color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 20px; cursor: pointer;
-    margin-bottom: 10px; white-space: nowrap; transition: background .15s, color .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid rgba(120,60,200,0.3);
+    background: linear-gradient(135deg, rgba(120,60,200,0.50), rgba(80,50,180,0.62));
+    backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%);
+    color: #fff; font-size: 12px; padding: 5px 12px; border-radius: 20px; cursor: pointer;
+    margin-bottom: 10px; white-space: nowrap; transition: filter .15s, transform .15s;
   }
-  .ai-suggest-btn:hover { background: var(--glass-strong); color: var(--accent-dark); }
+  .ai-suggest-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  @media (prefers-reduced-motion: reduce) { .ai-suggest-btn:hover { transform: none; } }
   .field-hint { font-weight: 400; opacity: .8; }
   .tp-input, .tp-textinput {
     width: 100%; border: 1px solid var(--glass-border); border-radius: 12px; padding: 9px 12px;
@@ -457,12 +460,36 @@ const SHARED_STYLES = `
 
   .ai-generating-overlay {
     position: fixed; inset: 0; z-index: 9999;
-    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    width: 100vw; height: 100vh;
+    background: linear-gradient(135deg, rgba(174,225,249,0.3) 0%, rgba(143,211,217,0.3) 40%, rgba(127,203,180,0.3) 65%, rgba(245,192,137,0.3) 100%);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+    animation: overlayFadeIn .4s ease-out;
   }
-  .ai-generating-overlay .spinner { width: 36px; height: 36px; border-width: 4px; }
-  .ai-generating-text { font-size: 15px; font-weight: 500; color: var(--ink); }
-  .ai-generating-sub { font-size: 12px; color: var(--muted); }
+  @media (max-width: 640px) {
+    .ai-generating-overlay {
+      background: linear-gradient(135deg, #AEE1F9 0%, #8FD3D9 40%, #7FCBB4 65%, #F5C089 100%);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+  @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .ai-generating-spinner {
+    width: 48px; height: 48px; border-radius: 50%;
+    border: 4px solid rgba(120,60,200,0.12);
+    border-top-color: rgba(120,60,200,0.8);
+    animation: spin 1s linear infinite;
+    filter: drop-shadow(0 0 8px rgba(120,60,200,0.25));
+  }
+  @keyframes gentleBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .ai-generating-text {
+    font-size: 17px; font-weight: 600; color: var(--ink); text-align: center; min-height: 24px;
+    transition: opacity .3s ease;
+  }
+  .ai-generating-sub {
+    font-size: 13px; color: var(--muted); text-align: center; max-width: 280px; line-height: 1.5;
+  }
 
   .error-banner {
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -516,6 +543,7 @@ const SHARED_STYLES = `
   .create-stack .tp-input { width: 100%; font-size: 16px; padding: 11px 13px; text-align: center; }
   .create-stack .export-btn { padding: 10px 28px; }
   .trip-list { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  .trip-list-section-title { font-size: 14px; font-weight: 600; color: var(--muted); margin: 0 0 4px 0; text-align: center; }
   .new-trip-slot.hidden { visibility: hidden; pointer-events: none; }
   @keyframes tripCardIn {
     from { opacity: 0; transform: translateY(26px); }
@@ -1086,6 +1114,33 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
   const [aiPeriodYear, setAiPeriodYear] = useState(new Date().getFullYear());
   const [aiStyles, setAiStyles] = useState([]);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiMsgIndex, setAiMsgIndex] = useState(0);
+  const [debugOverlay, setDebugOverlay] = useState(false);
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "o" && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") setDebugOverlay((v) => !v); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!aiGenerating && !debugOverlay) { setAiMsgIndex(0); return; }
+    const phrases = [
+      "Stiamo cercando le destinazioni migliori...",
+      "Ricerca delle gemme nascoste...",
+      "L'AI sta curando ogni dettaglio del tuo viaggio...",
+      "Scoprendo esperienze uniche per te...",
+      "Componendo il tuo itinerario da sogno...",
+      "Esplorando possibilità infinite...",
+      "Stiamo predisponendo la tua avventura...",
+      "Un attimo, il viaggio sta prendendo forma...",
+    ];
+    setAiMsgIndex(0);
+    const iv = setInterval(() => {
+      setAiMsgIndex((i) => (i + 1) % phrases.length);
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [aiGenerating, debugOverlay]);
 
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.avatar || "";
   const initials = (() => {
@@ -1156,8 +1211,10 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
   const aiWizardConfirm = async () => {
     setAiGenerating(true);
+    const jobId = uid();
     try {
       const payload = {
+        jobId,
         destination: aiDestination,
         duration: Number(aiDays),
         travel_period: aiDateMode === "period" ? formatWizardDates() : null,
@@ -1171,41 +1228,66 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Errore ${res.status}`);
-      const raw = await res.json();
-      console.log("[AI Wizard] Raw response received, length:", JSON.stringify(raw).length);
+      const { jobId: returnedJobId } = await res.json();
+      console.log("[AI Wizard] Job started:", returnedJobId);
 
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-      const data = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
-      console.log("[AI Wizard] Parsed trip, days:", Object.keys(data?.days || {}).length);
+      const MAX_POLLS = 300;
+      const POLL_INTERVAL = 3000;
+      let pollCount = 0;
 
-      if (!data || !data.days || typeof data.days !== "object") {
-        throw new Error("Formato risposta AI non valido: manca l'oggetto 'days'");
+      while (pollCount < MAX_POLLS) {
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+        pollCount++;
+        console.log(`[AI Wizard] Polling #${pollCount}...`);
+
+        const statusRes = await fetch(`/.netlify/functions/itinerary-status?jobId=${returnedJobId}`);
+        if (!statusRes.ok) continue;
+        const status = await statusRes.json();
+        console.log("[AI Wizard] Poll result:", status.status);
+
+        if (status.status === "done") {
+          const raw = status.data;
+          const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+          const data = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
+          console.log("[AI Wizard] Parsed trip, days:", Object.keys(data?.days || {}).length);
+
+          if (!data || !data.days || typeof data.days !== "object") {
+            throw new Error("Formato risposta AI non valido: manca l'oggetto 'days'");
+          }
+
+          const title = data.tripTitle || aiDestination || "Viaggio AI";
+          data.tripTitle = title;
+          if (!data.extras) data.extras = [];
+
+          const id = uid();
+          try {
+            await storage.set(`trip:${id}`, JSON.stringify(data));
+            console.log("[AI Wizard] Trip saved to storage, id:", id);
+          } catch (storageErr) {
+            console.error("[AI Wizard] Storage save failed:", storageErr.message);
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            window.alert("Salvataggio non riuscito. Il file JSON è stato scaricato. Puoi importarlo manualmente dalla scheda viaggi.");
+            aiWizardCancel();
+            return;
+          }
+          onImport([{ id, title, createdAt: Date.now() }]);
+          console.log("[AI Wizard] Done — navigating to planner");
+          onNavigateToPlanner(id);
+          return;
+        }
+
+        if (status.status === "error") {
+          throw new Error(status.error || "Generazione AI fallita");
+        }
       }
 
-      const title = data.tripTitle || aiDestination || "Viaggio AI";
-      data.tripTitle = title;
-      if (!data.extras) data.extras = [];
-
-      const id = uid();
-      try {
-        await storage.set(`trip:${id}`, JSON.stringify(data));
-        console.log("[AI Wizard] Trip saved to storage, id:", id);
-      } catch (storageErr) {
-        console.error("[AI Wizard] Storage save failed:", storageErr.message);
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        window.alert("Salvataggio non riuscito. Il file JSON è stato scaricato. Puoi importarlo manualmente dalla scheda viaggi.");
-        aiWizardCancel();
-        return;
-      }
-      onImport([{ id, title, createdAt: Date.now() }]);
-      console.log("[AI Wizard] Done — navigating to planner");
-      onNavigateToPlanner(id);
+      throw new Error("Timeout: la generazione sta prendendo troppo tempo");
     } catch (err) {
       console.error("[AI Wizard] Error:", err.message);
       window.alert("Si è verificato un errore durante la generazione dell'itinerario. Riprova più tardi.");
@@ -1580,19 +1662,22 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
               <button className="cover-toggle-link" onClick={() => { setShowForm(false); setShowCreationChoice(true); }}>Annulla</button>
           </div>
         </div>
-      ) : (
+      ) : filter !== "archived" ? (
         <div className="home-cta-stack">
-          <button className="new-trip-btn" onClick={() => { if (filter === "archived") setFilter("upcoming"); setShowCreationChoice(true); }}>
+          <button className="new-trip-btn" onClick={() => { setShowCreationChoice(true); }}>
             <Plus size={15} /> Nuovo viaggio
           </button>
         </div>
-      )}
+      ) : null}
       </div>
 
       {menuTripId && <div className="trip-menu-backdrop" onClick={() => setMenuTripId(null)} />}
 
       {visibleTrips.length > 0 && (
         <div className="trip-list" key={filter}>
+          {filter === "archived" && visibleTrips.length > 0 && (
+            <h3 className="trip-list-section-title">Viaggi archiviati</h3>
+          )}
           {visibleTrips.map((t, i) => (
             <div key={t.id} className={`trip-card${menuTripId === t.id ? " menu-open" : ""}`} style={{ animationDelay: `${i * 80}ms` }} onClick={() => onOpen(t.id)}>
               <div className="ic"><MapPin size={18} /></div>
@@ -1742,11 +1827,22 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
         </div>
       )}
 
-      {aiGenerating && (
+      {(aiGenerating || debugOverlay) && (
         <div className="ai-generating-overlay">
-          <span className="spinner" aria-hidden="true"></span>
-          <span className="ai-generating-text">Generazione itinerario in corso...</span>
-          <span className="ai-generating-sub">L'AI sta preparando il tuo viaggio, potrebbe volerci qualche minuto</span>
+          <div className="ai-generating-spinner"></div>
+          <span className="ai-generating-text">
+            {[
+              "Stiamo cercando le destinazioni migliori...",
+              "Ricerca delle gemme nascoste...",
+              "L'AI sta curando ogni dettaglio del tuo viaggio...",
+              "Scoprendo esperienze uniche per te...",
+              "Componendo il tuo itinerario da sogno...",
+              "Esplorando possibilità infinite...",
+              "Stiamo predisponendo la tua avventura...",
+              "Un attimo, il viaggio sta prendendo forma...",
+            ][aiMsgIndex]}
+          </span>
+          <span className="ai-generating-sub">Potrebbe volerci qualche minuto</span>
         </div>
       )}
     </div>
@@ -2614,7 +2710,25 @@ function DayEditor({ iso, data, categories, onChange, onClose, onDelete, onNavig
 
       <div className="field-block">
         <p className="field-label">Programma della giornata</p>
-        <button className="ai-suggest-btn" onClick={() => {}}>
+        <button className="ai-suggest-btn" onClick={async () => {
+          console.log("[AI Suggest] Calling activities API...");
+          try {
+            const res = await fetch("/.netlify/functions/activities", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                place: data.place,
+                date: iso,
+                existingActivities: data.activities.filter(Boolean),
+              }),
+            });
+            if (!res.ok) throw new Error(`Errore ${res.status}`);
+            const raw = await res.json();
+            console.log("[AI Suggest] Response:", raw);
+          } catch (err) {
+            console.error("[AI Suggest] Error:", err.message);
+          }
+        }}>
           <Sparkles size={13} /> Suggerisci con l'IA
         </button>
         {data.activities.map((a, i) => (
