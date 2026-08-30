@@ -17,6 +17,7 @@
 import netlifyIdentity from "netlify-identity-widget";
 
 const FN_URL = "/.netlify/functions/storage";
+const PUBLIC_FN_URL = "/.netlify/functions/public-itineraries";
 
 const errorListeners = new Set();
 
@@ -145,6 +146,46 @@ const storage = {
       return await res.json();
     } catch (e) {
       notifyError(0, "list");
+      return null;
+    }
+  },
+
+  async getPublicItineraries() {
+    try {
+      const res = await fetch(PUBLIC_FN_URL);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async savePublicItinerary(id, data) {
+    try {
+      const res = await authedFetch(PUBLIC_FN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, data }),
+      });
+      if (!res) { notifyError(401, "savePublic"); return null; }
+      if (!res.ok) { notifyError(res.status, "savePublic"); return null; }
+      return await res.json();
+    } catch (e) {
+      notifyError(0, "savePublic");
+      return null;
+    }
+  },
+
+  async deletePublicItinerary(id) {
+    try {
+      const res = await authedFetch(`${PUBLIC_FN_URL}?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res) { notifyError(401, "deletePublic"); return null; }
+      if (!res.ok) { notifyError(res.status, "deletePublic"); return null; }
+      return await res.json();
+    } catch (e) {
+      notifyError(0, "deletePublic");
       return null;
     }
   },

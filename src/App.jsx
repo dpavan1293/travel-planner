@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
-import { Plane, Luggage, FileText, Moon, Plus, X, Check, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon, Sparkles } from "lucide-react";
+import { Plane, Luggage, FileText, Moon, Plus, X, Check, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon, Sparkles, Globe, Clock, Mountain, Wallet, Sun, Navigation, Pencil } from "lucide-react";
+import PUBLIC_ITINERARIES from "./data/public-itineraries.json";
 import {
   CATEGORIES,
   EXTRA_META,
@@ -85,44 +86,33 @@ const SHARED_STYLES = `
         display: flex;
         align-items: center;
         justify-content: center;
-
+        gap: 2px;
         width: fit-content;
-        max-width: 180px;
         margin: 0 auto;
-
-        padding: 2px;
-
-        border-radius: 20px;
-
-        background: rgba(255, 255, 255, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.65);
-
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
+        padding: 4px 6px;
+        border-radius: 18px;
+        background: #eee;
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 50;
     }
 
     .travel-filter-option {
         border: none;
         background: transparent;
-
-        padding: 7px 14px;
-
+        padding: 6px 18px;
         border-radius: 17px;
-
         font-family: inherit;
-        font-size: 11px;
+        font-size: 11.5px;
         font-weight: 500;
-
         color: rgba(30, 55, 60, 0.75);
-
         cursor: pointer;
-
-        transition:
-            background 0.2s ease,
-            color 0.2s ease,
-            box-shadow 0.2s ease;
+        white-space: nowrap;
+        transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .travel-filter-option.active {
@@ -454,6 +444,7 @@ const SHARED_STYLES = `
   .flight-card-footer { display: flex; justify-content: flex-end; margin-top: 8px; }
 
   .empty-hint { font-size: 13.5px; color: var(--muted); text-align: center; padding: 18px 0; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 72px 0; color: var(--muted); opacity: 0.6; }
   .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 16px; }
   .loading-wrap .empty-hint { padding: 0; }
   .spinner {
@@ -531,10 +522,100 @@ const SHARED_STYLES = `
   .launcher-toucan { width: 166px; height: auto; flex-shrink: 0; object-fit: contain; }
   .launcher-copy { max-width: 420px; padding-top: 40px; text-align: left; }
   .launcher-content { width: 100%; max-width: 440px; margin: 0 auto; }
+  .launcher-content.explore-mode { max-width: 780px; }
   .launcher-footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; gap: 14px; }
   .launcher-footer .back-link { margin: 0 auto; }
-  .data-tools { margin-top: 26px; display: flex; align-items: center; justify-content: center; gap: 18px; opacity: 0.5; transition: opacity .2s; }
+  .data-tools { margin-top: 0; display: flex; align-items: center; justify-content: center; gap: 18px; opacity: 0.5; transition: opacity .2s; }
   .data-tools:hover { opacity: 0.9; }
+  .app-version { text-align: center; font-size: 10px; color: var(--muted); opacity: 0.35; margin: 6px 0 0; font-family: var(--font-mono); }
+
+  .explore-search-wrap { position: relative; margin-bottom: 16px; }
+  .explore-search-wrap .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .explore-search { width: 100%; padding: 12px 14px 12px 40px; border: 1px solid var(--glass-border); border-radius: 14px; background: rgba(255,255,255,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-family: var(--font-text); font-size: 14px; color: var(--ink); outline: none; transition: border-color .15s; }
+  .explore-search:focus { border-color: var(--accent); }
+  .explore-search::placeholder { color: var(--muted); }
+
+  .explore-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; justify-content: center; }
+  .explore-chip { border: none; background: rgba(255,255,255,0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.5); padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 500; color: rgba(30,55,60,0.75); cursor: pointer; transition: all .2s; font-family: var(--font-text); }
+  .explore-chip.active { background: #fff; color: #173f46; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .explore-chip:hover:not(.active) { color: #173f46; }
+
+  .explore-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media (max-width: 600px) { .explore-grid { grid-template-columns: 1fr; } }
+  .explore-card { position: relative; border-radius: 18px; overflow: hidden; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: transform .15s, border-color .15s, box-shadow .15s; box-shadow: 0 4px 16px rgba(15,30,45,0.08); }
+  .explore-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 28px rgba(15,30,45,0.12); }
+  .explore-card-img { width: 100%; height: 130px; object-fit: cover; display: block; }
+  .explore-card-body { padding: 12px 14px 14px; }
+  .explore-card-country { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--teal); margin-bottom: 4px; font-family: var(--font-mono); }
+  .explore-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 6px; }
+  .explore-card-desc { font-size: 13px; color: var(--muted); margin: 0 0 10px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .explore-card-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+  .explore-card-meta span { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+
+  .explore-detail-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(15,26,33,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s; }
+  .explore-detail { background: #fff; border-radius: 22px; width: 100%; max-width: 600px; max-height: 100%; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp .25s cubic-bezier(0.16,1,0.3,1); scrollbar-width: none; }
+  .explore-detail::-webkit-scrollbar { display: none; }
+  .explore-detail-cover { width: 100%; height: 220px; object-fit: cover; border-radius: 22px 22px 0 0; }
+  .explore-detail-body { padding: 24px; }
+  .explore-detail-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; color: var(--ink); cursor: pointer; transition: box-shadow .15s; }
+  .explore-detail-close:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
+  .explore-detail-country { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--teal); margin-bottom: 4px; font-family: var(--font-mono); }
+  .explore-detail-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin: 0 0 8px; }
+  .explore-detail-desc { font-size: 14px; color: var(--ink); line-height: 1.55; margin: 0 0 16px; }
+  .explore-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .explore-detail-info { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: rgba(46,111,142,0.06); }
+  .explore-detail-info .info-icon { color: var(--teal); flex-shrink: 0; }
+  .explore-detail-info .info-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.3px; font-family: var(--font-mono); }
+  .explore-detail-info .info-value { font-size: 13px; font-weight: 500; }
+  .explore-detail-tips { padding: 12px 14px; border-radius: 12px; background: rgba(255,200,50,0.1); border-left: 3px solid #e6b800; margin-bottom: 18px; }
+  .explore-detail-tips p { font-size: 13px; color: var(--ink); margin: 0; line-height: 1.5; }
+  .explore-detail-days { margin-bottom: 20px; }
+  .explore-detail-days h4 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--ink); }
+  .explore-day-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+  .explore-day-item:last-child { border-bottom: none; }
+  .explore-day-num { width: 28px; height: 28px; border-radius: 8px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; font-family: var(--font-mono); }
+  .explore-day-place { font-size: 13px; font-weight: 500; }
+  .explore-day-acts { font-size: 12px; color: var(--muted); }
+  .explore-import-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--teal), var(--accent-dark)); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: filter .15s; font-family: var(--font-display); }
+  .explore-import-btn:hover { filter: brightness(1.08); }
+  .explore-import-btn:disabled { opacity: .5; cursor: default; }
+
+  .explore-empty { text-align: center; padding: 48px 20px; }
+  .explore-empty-icon { color: var(--muted); opacity: 0.4; margin-bottom: 12px; }
+  .explore-empty p { font-size: 14px; color: var(--muted); margin: 0; }
+
+  .admin-header { text-align: center; margin-bottom: 28px; }
+  .admin-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--teal); color: #fff; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: var(--font-mono); }
+  .admin-import-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px; border: 2px dashed var(--glass-border); border-radius: 16px; background: rgba(255,255,255,0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--teal); font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s; font-family: var(--font-display); margin-bottom: 24px; }
+  .admin-import-btn:hover { border-color: var(--teal); background: rgba(46,111,142,0.06); }
+  .admin-card-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+  .admin-card-actions button { width: 32px; height: 32px; border: none; border-radius: 8px; background: rgba(0,0,0,0.04); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .admin-card-actions button:hover { background: rgba(0,0,0,0.08); color: var(--ink); }
+  .admin-card-actions .delete-btn:hover { color: var(--coral); }
+
+  .admin-modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(15,26,33,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s; }
+  .admin-modal { background: #fff; border-radius: 22px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp .25s cubic-bezier(0.16,1,0.3,1); scrollbar-width: none; }
+  .admin-modal::-webkit-scrollbar { display: none; }
+  .admin-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
+  .admin-modal-head h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 0; }
+  .admin-modal-body { padding: 20px 24px 24px; }
+  .admin-modal-section { margin-bottom: 20px; }
+  .admin-modal-section h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; color: var(--muted); margin: 0 0 12px; font-family: var(--font-mono); }
+  .admin-field { margin-bottom: 14px; }
+  .admin-field label { display: block; font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .admin-field input, .admin-field select, .admin-field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: 10px; background: rgba(255,255,255,0.5); font-family: var(--font-text); font-size: 13px; color: var(--ink); outline: none; transition: border-color .15s; }
+  .admin-field input:focus, .admin-field select:focus, .admin-field textarea:focus { border-color: var(--accent); }
+  .admin-field textarea { resize: vertical; min-height: 60px; }
+  .admin-json-upload { border: 2px dashed var(--glass-border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: border-color .15s; margin-bottom: 14px; }
+  .admin-json-upload:hover { border-color: var(--teal); }
+  .admin-json-upload p { margin: 0; font-size: 13px; color: var(--muted); }
+  .admin-json-preview { background: rgba(0,0,0,0.03); border-radius: 10px; padding: 12px; font-size: 12px; color: var(--ink); font-family: var(--font-mono); max-height: 120px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .admin-days-preview { font-size: 12px; color: var(--muted); }
+  .admin-modal-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); }
+  .admin-cancel-btn { padding: 10px 20px; border: 1px solid var(--glass-border); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px; cursor: pointer; font-family: var(--font-text); }
+  .admin-publish-btn { padding: 10px 24px; border: none; border-radius: 10px; background: var(--teal); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-text); transition: filter .15s; }
+  .admin-publish-btn:hover { filter: brightness(1.08); }
+  .admin-publish-btn:disabled { opacity: .5; cursor: default; }
   .data-tool { border: none; background: none; padding: 6px; color: var(--muted); font-size: 11.5px; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; font-family: var(--font-text); }
   .data-tool:hover { color: var(--accent-dark); }
   .launcher-title { font-family: var(--font-page-title); font-size: 42px; font-weight: 350; margin: 0 0 8px; }
@@ -550,7 +631,7 @@ const SHARED_STYLES = `
   .create-stack .export-btn { padding: 10px 28px; }
   .trip-list { display: flex; flex-direction: column; gap: 10px; text-align: left; }
   .trip-list-section-title { font-size: 14px; font-weight: 600; color: var(--muted); margin: 0 0 4px 0; text-align: center; }
-  .new-trip-slot.hidden { visibility: hidden; pointer-events: none; }
+  .new-trip-slot.hidden { visibility: hidden; pointer-events: none; height: 0px}
   @keyframes tripCardIn {
     from { opacity: 0; transform: translateY(26px); }
     to { opacity: 1; transform: translateY(0); }
@@ -561,14 +642,21 @@ const SHARED_STYLES = `
   .trip-card {
     position: relative; display: flex; align-items: center; gap: 14px;
     background: rgba(255,255,255,0.4); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    border: 1px solid var(--glass-border); border-radius: 18px; padding: 14px 16px; cursor: pointer;
+    border: 1px solid var(--glass-border); border-radius: 18px; padding: 8px 8px; cursor: pointer;
     transition: border-color .15s, transform .15s; box-shadow: 0 6px 20px rgba(15,30,45,0.1);
   }
   .trip-card:hover { border-color: var(--accent); transform: translateY(-1px); }
   .trip-card .ic {
-    width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.55);
+    width: 74px; height: 74px; border-radius: 14px; background: rgba(255,255,255,0.55);
     display: flex; align-items: center; justify-content: center; color: var(--teal); flex-shrink: 0;
+    overflow: hidden; position: relative;
   }
+  .trip-card .ic .ic-thumb {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 14px;
+  }
+  .trip-card .ic .ic-fallback { display: none; }
+  .trip-card .ic.img-failed .ic-thumb { display: none; }
+  .trip-card .ic.img-failed .ic-fallback { display: flex; }
   .trip-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0 0 2px; }
   .trip-card-meta { font-size: 12.5px; color: var(--muted); margin: 0; font-family: var(--font-mono); }
   .trip-card-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; flex-shrink: 0; position: relative; }
@@ -817,7 +905,7 @@ const SHARED_STYLES = `
     .tp-wrap { max-width: 100%; }
     .tp-header { margin-bottom: 18px; }
     .tp-title-input { font-size: 26px; }
-    .tp-input, .tp-textinput, .extra-title-input { font-size: 16px; }
+    .tp-textinput, .extra-title-input { font-size: 16px; }
     .share-link-row .tp-input { font-size: 12px; }
     .tp-card { padding: 14px; border-radius: 18px; margin-bottom: 12px; }
     .cal-header { margin-bottom: 8px; }
@@ -874,6 +962,435 @@ const SHARED_STYLES = `
   }
 `;
 
+const CONTINENTS = ["Europa", "Asia", "Africa", "Americhe", "Oceania"];
+const DIFFICULTY_COLORS = { facile: "#2ecc71", media: "#f39c12", difficile: "#e74c3c" };
+const ADMIN_EMAILS = ["diego@arsenalia.com"];
+
+function AdminImportModal({ onClose, onSave, editItem }) {
+  const [jsonInput, setJsonInput] = useState("");
+  const [parsed, setParsed] = useState(null);
+  const [title, setTitle] = useState(editItem?.title || "");
+  const [coverUrl, setCoverUrl] = useState(editItem?.coverUrl || "");
+  const [continent, setContinent] = useState(editItem?.continent || "Europa");
+  const [country, setCountry] = useState(editItem?.country || "");
+  const [description, setDescription] = useState(editItem?.description || "");
+  const [difficulty, setDifficulty] = useState(editItem?.difficulty || "facile");
+  const [budget, setBudget] = useState(editItem?.budget || "medio");
+  const [bestPeriod, setBestPeriod] = useState(editItem?.bestPeriod || "");
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    if (editItem) {
+      setJsonInput(JSON.stringify({ tripTitle: editItem.title, days: editItem.days || {}, extras: editItem.extras || [] }, null, 2));
+      handleParseJson(JSON.stringify({ tripTitle: editItem.title, days: editItem.days || {}, extras: editItem.extras || [] }));
+    }
+  }, [editItem]);
+
+  const handleParseJson = (text) => {
+    setJsonInput(text);
+    try {
+      const data = JSON.parse(text);
+      if (data && (data.days || data.tripTitle)) {
+        setParsed(data);
+        if (!title && data.tripTitle) setTitle(data.tripTitle);
+        if (!coverUrl && data.coverImageUrl) setCoverUrl(data.coverImageUrl);
+      } else {
+        setParsed(null);
+      }
+    } catch {
+      setParsed(null);
+    }
+  };
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => handleParseJson(ev.target.result);
+    reader.readAsText(file);
+  };
+
+  const daysCount = parsed?.days ? Object.keys(parsed.days).length : 0;
+
+  const handleSave = async () => {
+    if (!parsed || !title.trim()) return;
+    setSaving(true);
+    const id = editItem?.id || title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
+    const data = {
+      id,
+      title: title.trim(),
+      coverUrl,
+      continent,
+      country: country.trim(),
+      description: description.trim(),
+      difficulty,
+      budget,
+      bestPeriod: bestPeriod.trim(),
+      days: parsed.days || {},
+      extras: parsed.extras || [],
+      duration: daysCount,
+    };
+    await onSave(id, data);
+    setSaving(false);
+  };
+
+  return (
+    <div className="admin-modal-overlay" onClick={onClose}>
+      <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="admin-modal-head">
+          <h2>{editItem ? "Modifica itinerario" : "Importa itinerario pubblico"}</h2>
+          <button className="icon-btn" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="admin-modal-body">
+          <div className="admin-modal-section">
+            <h3>Dati itinerario</h3>
+            {parsed ? (
+              <div className="admin-json-preview">{daysCount} giorni trovati — {parsed.tripTitle || "Senza titolo"}</div>
+            ) : (
+              <div className="admin-json-upload" onClick={() => fileRef.current?.click()}>
+                <p>Incolla il JSON qui sotto oppure carica un file</p>
+                <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleFile} />
+              </div>
+            )}
+            <textarea
+              className="admin-field"
+              style={{ width: "100%", minHeight: 100, padding: 10, borderRadius: 10, border: "1px solid var(--glass-border)", fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical" }}
+              value={jsonInput}
+              onChange={(e) => handleParseJson(e.target.value)}
+              placeholder='{"tripTitle": "...", "days": {...}, "extras": [...]}'
+            />
+          </div>
+
+          <div className="admin-modal-section">
+            <h3>Metadati pubblici</h3>
+            <div className="admin-field">
+              <label>Titolo pubblico</label>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Roma in 5 giorni" />
+            </div>
+            <div className="admin-field">
+              <label>URL Copertina</label>
+              <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="admin-field">
+                <label>Continente</label>
+                <select value={continent} onChange={(e) => setContinent(e.target.value)}>
+                  {CONTINENTS.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="admin-field">
+                <label>Nazione</label>
+                <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Es. Italia" />
+              </div>
+            </div>
+            <div className="admin-field">
+              <label>Descrizione</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Breve descrizione dell'itinerario..." rows={2} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div className="admin-field">
+                <label>Difficoltà</label>
+                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
+                  <option value="facile">Facile</option>
+                  <option value="media">Media</option>
+                  <option value="difficile">Difficile</option>
+                </select>
+              </div>
+              <div className="admin-field">
+                <label>Budget</label>
+                <select value={budget} onChange={(e) => setBudget(e.target.value)}>
+                  <option value="basso">Basso</option>
+                  <option value="medio">Medio</option>
+                  <option value="alto">Alto</option>
+                </select>
+              </div>
+              <div className="admin-field">
+                <label>Miglior periodo</label>
+                <input value={bestPeriod} onChange={(e) => setBestPeriod(e.target.value)} placeholder="Es. Aprile-Ottobre" />
+              </div>
+            </div>
+          </div>
+
+          {parsed && (
+            <div className="admin-modal-section">
+              <h3>Anteprima ({daysCount} giorni)</h3>
+              <div className="admin-days-preview">
+                {Object.entries(parsed.days || {}).map(([iso, day], i) => (
+                  <div key={iso} style={{ padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
+                    <strong>Giorno {i + 1}</strong> — {day.place}: {(day.activities || []).join(", ")}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="admin-modal-actions">
+            <button className="admin-cancel-btn" onClick={onClose}>Annulla</button>
+            <button className="admin-publish-btn" onClick={handleSave} disabled={!parsed || !title.trim() || saving}>
+              {saving ? "Salvataggio..." : editItem ? "Salva modifiche" : "Pubblica"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminHome({ user }) {
+  const [itineraries, setItineraries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    const res = await storage.getPublicItineraries();
+    setItineraries(res?.itineraries || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSave = async (id, data) => {
+    await storage.savePublicItinerary(id, data);
+    setShowModal(false);
+    setEditItem(null);
+    load();
+  };
+
+  const handleDelete = async (id, title) => {
+    if (!window.confirm(`Eliminare "${title}"?`)) return;
+    await storage.deletePublicItinerary(id);
+    load();
+  };
+
+  const handleEdit = (item) => {
+    setEditItem(item);
+    setShowModal(true);
+  };
+
+  const handleNew = () => {
+    setEditItem(null);
+    setShowModal(true);
+  };
+
+  return (
+    <div className="explore-view">
+      <div className="admin-header">
+        <span className="admin-badge">Admin</span>
+        <p style={{ fontSize: 14, color: "var(--muted)", margin: 0 }}>Gestione itinerari pubblici</p>
+      </div>
+
+      <button className="admin-import-btn" onClick={handleNew}>
+        <Plus size={18} /> Importa itinerario pubblico
+      </button>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40 }}><p className="empty-hint">Caricamento...</p></div>
+      ) : itineraries.length === 0 ? (
+        <div className="explore-empty">
+          <Globe size={40} className="explore-empty-icon" />
+          <p>Nessun itinerario pubblico ancora.</p>
+        </div>
+      ) : (
+        <div className="explore-grid">
+          {itineraries.map((it) => (
+            <div key={it.id} className="explore-card">
+              <img className="explore-card-img" src={it.coverUrl} alt={it.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; }} />
+              <div className="explore-card-body" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p className="explore-card-country">{it.country} — {it.continent}</p>
+                  <p className="explore-card-title" style={{ margin: 0 }}>{it.title}</p>
+                </div>
+                <div className="admin-card-actions">
+                  <button onClick={() => handleEdit(it)} title="Modifica"><Pencil size={14} /></button>
+                  <button className="delete-btn" onClick={() => handleDelete(it.id, it.title)} title="Elimina"><Trash2 size={14} /></button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <AdminImportModal
+          onClose={() => { setShowModal(false); setEditItem(null); }}
+          onSave={handleSave}
+          editItem={editItem}
+        />
+      )}
+    </div>
+  );
+}
+
+function ExploreView({ onImport, user }) {
+  const [search, setSearch] = useState("");
+  const [continent, setContinent] = useState("Tutti");
+  const [selected, setSelected] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [all, setAll] = useState([]);
+
+  useEffect(() => {
+    storage.getPublicItineraries().then((res) => {
+      if (res?.itineraries?.length) {
+        setAll(res.itineraries);
+      } else {
+        setAll(PUBLIC_ITINERARIES.itineraries || []);
+      }
+    }).catch(() => {
+      setAll(PUBLIC_ITINERARIES.itineraries || []);
+    });
+  }, []);
+
+  const filtered = all.filter((it) => {
+    const matchContinent = continent === "Tutti" || it.continent === continent;
+    if (!matchContinent) return false;
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      it.title.toLowerCase().includes(q) ||
+      it.country.toLowerCase().includes(q) ||
+      it.description.toLowerCase().includes(q) ||
+      (it.tips && it.tips.toLowerCase().includes(q))
+    );
+  });
+
+  const handleImport = async (it) => {
+    if (!user) return;
+    setImporting(true);
+    try {
+      const id = uid();
+      const title = `[Esplora] ${it.title}`;
+      const days = {};
+      if (it.days) {
+        Object.entries(it.days).forEach(([iso, entry]) => {
+          days[iso] = {
+            place: entry.place || "",
+            activities: entry.activities || [],
+            accommodation: entry.accommodation || "",
+            categories: entry.categories || [],
+            image: entry.image || "",
+          };
+        });
+      }
+      const payload = { tripTitle: title, days, extras: it.extras || [], coverImageUrl: it.coverUrl || "" };
+      await storage.set(`trip:${id}`, JSON.stringify(payload));
+      onImport([{ id, title, createdAt: Date.now(), coverImageUrl: it.coverUrl || "" }]);
+      setSelected(null);
+    } catch (e) {
+      window.alert("Errore durante l'importazione. Riprova.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <div className="explore-view">
+      <div className="explore-search-wrap">
+        <Search size={16} className="search-icon" />
+        <input
+          className="explore-search"
+          placeholder="Cerca per destinazione, paese o parola chiave..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="explore-chips">
+        {CONTINENTS.map((c) => (
+          <button
+            key={c}
+            className={`explore-chip${continent === c ? " active" : ""}`}
+            onClick={() => setContinent(c)}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="explore-empty">
+          <Globe size={40} className="explore-empty-icon" />
+          <p>Nessun itinerario trovato.</p>
+        </div>
+      ) : (
+        <div className="explore-grid">
+          {filtered.map((it) => (
+            <div key={it.id} className="explore-card" onClick={() => setSelected(it)}>
+              <img className="explore-card-img" src={it.coverUrl} alt={it.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; e.currentTarget.style.display = "block"; }} />
+              <div className="explore-card-body">
+                <p className="explore-card-country">{it.country} — {it.continent}</p>
+                <p className="explore-card-title">{it.title}</p>
+                <p className="explore-card-desc">{it.description}</p>
+                <div className="explore-card-meta">
+                  <span><Clock size={12} /> {it.duration}gg</span>
+                  <span><Mountain size={12} /> {it.difficulty}</span>
+                  <span><Wallet size={12} /> {it.budget}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selected && (
+        <div className="explore-detail-overlay" onClick={() => setSelected(null)}>
+          <div className="explore-detail" onClick={(e) => e.stopPropagation()}>
+            <button className="icon-btn explore-detail-close" onClick={() => setSelected(null)} aria-label="Chiudi">
+              <X size={18} />
+            </button>
+            <img className="explore-detail-cover" src={selected.coverUrl} alt={selected.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; }} />
+            <div className="explore-detail-body">
+              <p className="explore-detail-country">{selected.country} — {selected.continent}</p>
+              <h2 className="explore-detail-title">{selected.title}</h2>
+              <p className="explore-detail-desc">{selected.description}</p>
+
+              <div className="explore-detail-grid">
+                <div className="explore-detail-info">
+                  <Clock size={16} className="info-icon" />
+                  <div><p className="info-label">Durata</p><p className="info-value">{selected.duration} giorni</p></div>
+                </div>
+                <div className="explore-detail-info">
+                  <Mountain size={16} className="info-icon" />
+                  <div><p className="info-label">Difficoltà</p><p className="info-value" style={{ color: DIFFICULTY_COLORS[selected.difficulty] }}>{selected.difficulty}</p></div>
+                </div>
+                <div className="explore-detail-info">
+                  <Wallet size={16} className="info-icon" />
+                  <div><p className="info-label">Budget</p><p className="info-value">{selected.budget}</p></div>
+                </div>
+                <div className="explore-detail-info">
+                  <Sun size={16} className="info-icon" />
+                  <div><p className="info-label">Miglior periodo</p><p className="info-value">{selected.bestPeriod}</p></div>
+                </div>
+              </div>
+
+              {selected.days && Object.keys(selected.days).length > 0 && (
+                <div className="explore-detail-days">
+                  <h4>Giorni</h4>
+                  {Object.entries(selected.days).map(([iso, day], i) => (
+                    <div key={iso} className="explore-day-item">
+                      <span className="explore-day-num">{i + 1}</span>
+                      <div>
+                        <p className="explore-day-place">{day.place}</p>
+                        <p className="explore-day-acts">{(day.activities || []).join(", ")}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button className="explore-import-btn" onClick={() => handleImport(selected)} disabled={importing || !user}>
+                {importing ? "Importazione..." : user ? "Importa come viaggio" : "Accedi per importare"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const [view, setView] = useState("loading");
   const [trips, setTrips] = useState([]);
@@ -881,6 +1398,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const [importState, setImportState] = useState(pendingShareToken ? "pending" : "none");
   const [importError, setImportError] = useState("");
   const [storageError, setStorageError] = useState(null);
+  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
 
   useEffect(() => {
     const unsubscribe = onStorageError(({ status }) => {
@@ -950,7 +1468,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const createTrip = async (name) => {
     const title = name.trim() || "Nuovo viaggio";
     const id = uid();
-    const entry = { id, title, createdAt: Date.now() };
+    const entry = { id, title, createdAt: Date.now(), coverImageUrl: "" };
     persistIndex([entry, ...trips]);
     try {
       await storage.set(`trip:${id}`, JSON.stringify({ tripTitle: title, days: {}, extras: [] }));
@@ -987,6 +1505,14 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
     });
   };
 
+  const setTripCover = (id, coverImageUrl) => {
+    setTrips((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, coverImageUrl } : t));
+      storage.set("trips-index", JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  };
+
   const duplicateTrip = async (id, title) => {
     try {
       const res = await storage.get(`trip:${id}`);
@@ -996,7 +1522,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
       const newTitle = `${title} (copia)`;
       data.tripTitle = newTitle;
       await storage.set(`trip:${newId}`, JSON.stringify(data));
-      const entry = { id: newId, title: newTitle, createdAt: Date.now() };
+      const entry = { id: newId, title: newTitle, createdAt: Date.now(), coverImageUrl: data.coverImageUrl || "" };
       persistIndex([entry, ...trips]);
     } catch (e) {
       // in caso di errore l'utente può semplicemente riprovare
@@ -1085,7 +1611,10 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
                 <p className="empty-hint">Caricamento dei tuoi viaggi...</p>
               </div>
             )}
-            {view === "launcher" && (
+            {view === "launcher" && isAdmin && (
+              <AdminHome user={user} />
+            )}
+            {view === "launcher" && !isAdmin && (
               <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} onNavigateToPlanner={(id) => { setCurrentTripId(id); setView("planner"); }} />
             )}
         {view === "planner" && currentTripId && (
@@ -1094,6 +1623,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
             tripId={currentTripId}
             onBack={() => setView("launcher")}
             onTitleChange={(title) => renameTrip(currentTripId, title)}
+            onCoverChange={(url) => setTripCover(currentTripId, url)}
           />
         )}
           </>
@@ -1168,9 +1698,6 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
   const upcomingTrips = trips.filter((t) => !t.archived);
   const visibleTrips = filter === "archived" ? archivedTrips : upcomingTrips;
 
-  useEffect(() => {
-    if (filter === "archived" && archivedTrips.length === 0) setFilter("upcoming");
-  }, [filter, archivedTrips.length]);
 
   useEffect(() => {
     if (showForm && inputRef.current) inputRef.current.focus();
@@ -1382,7 +1909,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
   };
 
   return (
-    <div className="launcher-shell" style={{ position: "relative" }}>
+    <div className="launcher-shell" style={{ position: "relative", justifyContent: filter === "explore" ? "flex-start" : undefined }}>
       {user && (
         <div className="account-wrap">
           <button className="avatar-btn" onClick={() => setShowAccountMenu((v) => !v)} aria-label="Account">
@@ -1417,8 +1944,8 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
         </div>
       </div>
 
-      <div className="launcher-content">
-      <div className={`new-trip-slot${filter === "archived" ? " hidden" : ""}`}>
+      <div className={`launcher-content${filter === "explore" ? " explore-mode" : ""}`}>
+      <div className={`new-trip-slot${filter === "archived" || filter === "explore" ? " hidden" : ""}`}>
       {aiWizardStep > 0 ? (
         <div className="ai-wizard">
 
@@ -1683,16 +2210,25 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       ) : null}
       </div>
 
+      {filter === "explore" ? (
+        <ExploreView onImport={onImport} user={user} />
+      ) : null}
+
       {menuTripId && <div className="trip-menu-backdrop" onClick={() => setMenuTripId(null)} />}
 
-      {visibleTrips.length > 0 && (
+      {filter !== "explore" && visibleTrips.length > 0 && (
         <div className="trip-list" key={filter}>
           {filter === "archived" && visibleTrips.length > 0 && (
             <h3 className="trip-list-section-title">Viaggi archiviati</h3>
           )}
           {visibleTrips.map((t, i) => (
             <div key={t.id} className={`trip-card${menuTripId === t.id ? " menu-open" : ""}`} style={{ animationDelay: `${i * 80}ms` }} onClick={() => onOpen(t.id)}>
-              <div className="ic"><MapPin size={18} /></div>
+              <div className="ic">
+                {t.coverImageUrl ? (
+                  <img className="ic-thumb" src={t.coverImageUrl} alt="" onError={(e) => { e.currentTarget.parentElement.classList.add("img-failed"); }} />
+                ) : null}
+                <MapPin size={18} className={t.coverImageUrl ? "ic-fallback" : ""} />
+              </div>
               <div>
                 <p className="trip-card-title">{t.title}</p>
                 <p className="trip-card-meta">{t.archived ? "Archiviato" : `Creato il ${formatShortDate(t.createdAt)}`}</p>
@@ -1733,13 +2269,15 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
       )}
 
       {visibleTrips.length === 0 && filter === "archived" && (
-        <p className="empty-hint" key="empty">Nessun viaggio archiviato.</p>
+        <div className="empty-state">
+          <Archive size={32} strokeWidth={1.5} />
+          <p className="empty-hint">Non hai nessun viaggio archiviato.</p>
+        </div>
       )}
       </div>
 
       {user && (
         <div className="launcher-footer">
-          {archivedTrips.length > 0 && (
             <div className="travel-filter">
               <button
                 className={`travel-filter-option${filter === "upcoming" ? " active" : ""}`}
@@ -1753,22 +2291,27 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
               >
                 Archiviati
               </button>
+              <button
+                className={`travel-filter-option${filter === "explore" ? " active" : ""}`}
+                onClick={() => setFilter("explore")}
+              >
+                Esplora
+              </button>
             </div>
-          )}
+            <div className="data-tools">
+              {trips.length > 0 && (
+                <button className="data-tool" onClick={openExportPicker}>
+                  Esporta itinerari (JSON)
+                </button>
+              )}
+              <label className="data-tool">
+                Importa itinerario (JSON)
+                <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} />
+              </label>
+            </div>
+            <p className="app-version">TucanoPlanner v1.1.0 — by Diego</p>
         </div>
       )}
-
-      <div className="data-tools">
-        {trips.length > 0 && (
-          <button className="data-tool" onClick={openExportPicker}>
-            Esporta itinerari (JSON)
-          </button>
-        )}
-        <label className="data-tool">
-          Importa itinerario (JSON)
-          <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} />
-        </label>
-      </div>
 
       {showExportPicker && (
         <div className="modal-overlay" onClick={() => setShowExportPicker(false)}>
@@ -1861,7 +2404,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
   );
 }
 
-function PlannerView({ tripId, onBack, onTitleChange }) {
+function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
   const [tripTitle, setTripTitle] = useState("");
   const [days, setDays] = useState({});
   const [extras, setExtras] = useState([]);
@@ -1973,6 +2516,12 @@ function PlannerView({ tripId, onBack, onTitleChange }) {
     const t = setTimeout(() => onTitleChange(tripTitle || "Nuovo viaggio"), 400);
     return () => clearTimeout(t);
   }, [tripTitle, loaded]);
+
+  useEffect(() => {
+    if (!loaded || !onCoverChange) return;
+    const t = setTimeout(() => onCoverChange(coverImageUrl || ""), 400);
+    return () => clearTimeout(t);
+  }, [coverImageUrl, loaded]);
 
   const grid = getMonthGrid(currentMonth.getFullYear(), currentMonth.getMonth());
   const today = new Date();
