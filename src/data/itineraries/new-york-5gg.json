@@ -1,0 +1,52 @@
+{
+  "id": "new-york-5gg",
+  "title": "New York City immersione",
+  "country": "Stati Uniti",
+  "continent": "Americhe",
+  "coverUrl": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80",
+  "description": "Vivi NYC come un vero newyorkese: dai grattacieli di Manhattan ai Brooklyn, dai museum hopping ai rooftop bar.",
+  "duration": 5,
+  "difficulty": "facile",
+  "budget": "alto",
+  "bestPeriod": "Aprile-Giugno, Settembre-Novembre",
+  "transport": "Metro (MTA), taxi, piedi",
+  "tips": "Compra la MetroCard 7 giorni. Brooklyn Bridge è meglio al mattino presto. Prenota per il ferry di Staten Island (gratis).",
+  "days": {
+    "2025-06-10": {
+      "place": "New York",
+      "activities": ["Times Square", "Broadway show", "Central Park"],
+      "accommodation": "Hotel a Midtown",
+      "categories": ["cultura", "intrattenimento"],
+      "image": "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80"
+    },
+    "2025-06-11": {
+      "place": "New York",
+      "activities": ["Statue of Liberty", "Ellis Island", "Wall Street", "9/11 Memorial"],
+      "accommodation": "Hotel a Midtown",
+      "categories": ["storia", "cultura"],
+      "image": "https://images.unsplash.com/photo-1503891617560-5b8c2e28cbf6?w=800&q=80"
+    },
+    "2025-06-12": {
+      "place": "Brooklyn",
+      "activities": ["Brooklyn Bridge walk", "DUMBO", "Williamsburg", "Bushwick street art"],
+      "accommodation": "Hotel a Midtown",
+      "categories": ["passeggiata", "arte"],
+      "image": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80"
+    },
+    "2025-06-13": {
+      "place": "New York",
+      "activities": ["Met Museum", "MoMA", "Fifth Avenue", "Rockefeller Center"],
+      "accommodation": "Hotel a Midtown",
+      "categories": ["arte", "shopping"],
+      "image": "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&q=80"
+    },
+    "2025-06-14": {
+      "place": "New York",
+      "activities": ["High Line", "Chelsea Market", "SoHo", "Rooftop bar al tramonto"],
+      "accommodation": "Hotel a Midtown",
+      "categories": ["passeggiata", "cibo"],
+      "image": "https://images.unsplash.com/photo-1503891617560-5b8c2e28cbf6?w=800&q=80"
+    }
+  },
+  "extras": []
+}

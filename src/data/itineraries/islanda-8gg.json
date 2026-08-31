@@ -1,0 +1,73 @@
+{
+  "id": "islanda-8gg",
+  "title": "Islanda: Ring Road",
+  "country": "Islanda",
+  "continent": "Europa",
+  "coverUrl": "https://images.unsplash.com/photo-1504829857797-ddff29c27927?w=800&q=80",
+  "description": "Il giro completo dell'Islanda in 8 giorni: ghiacciai, cascate, sorgenti termali e paesaggi lunar lungo la Ring Road.",
+  "duration": 8,
+  "difficulty": "media",
+  "budget": "alto",
+  "bestPeriod": "Giugno-Agosto (mecedole di luce), Settembre (aurora boreale)",
+  "transport": "Auto a noleggio (4x4 consigliato)",
+  "tips": "Prenota auto e hotel con mesi di anticipo in estate. La Ring Road è percorribile in 7 giorni ma 8 danno respiro. Porta sempre layer di vestiti.",
+  "days": {
+    "2025-09-01": {
+      "place": "Reykjavik",
+      "activities": ["Arrivo", "Blue Lagoon", "Tour della città"],
+      "accommodation": "Hotel a Reykjavik",
+      "categories": ["benessere", "cultura"],
+      "image": "https://images.unsplash.com/photo-1504829857797-ddff29c27927?w=800&q=80"
+    },
+    "2025-09-02": {
+      "place": "Golden Circle",
+      "activities": ["Thingvellir", "Geysir", "Gullfoss", "Friðheimar"],
+      "accommodation": "Guesthouse vicino Selfoss",
+      "categories": ["natura", "cultura"],
+      "image": "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=800&q=80"
+    },
+    "2025-09-03": {
+      "place": "Sudurland",
+      "activities": ["Seljalandsfoss", "Skogafoss", "Vik (neriere)", "Reynisfjara"],
+      "accommodation": "Guesthouse a Vik",
+      "categories": ["natura", "avventura"],
+      "image": "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=800&q=80"
+    },
+    "2025-09-04": {
+      "place": "Skaftafell / Jokulsarlon",
+      "activities": ["Skaftafell glacier hike", "Jokulsarlon glacier lagoon", "Diamond Beach"],
+      "accommodation": "Hotel vicino Jokulsarlon",
+      "categories": ["avventura", "natura"],
+      "image": "https://images.unsplash.com/photo-1504829857797-ddff29c27927?w=800&q=80"
+    },
+    "2025-09-05": {
+      "place": "Eastfjords",
+      "activities": ["Egilsstadir", "Seydisfjordur", "Hengifoss"],
+      "accommodation": "Guesthouse a Egilsstadir",
+      "categories": ["natura", "passeggiata"],
+      "image": "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=800&q=80"
+    },
+    "2025-09-06": {
+      "place": "Myvatn",
+      "activities": ["Myvatn Nature Baths", "Dimmuborgir", "Godafoss", "Grjotagja cave"],
+      "accommodation": "Guesthouse a Myvatn",
+      "categories": ["natura", "benessere"],
+      "image": "https://images.unsplash.com/photo-1504829857797-ddff29c27927?w=800&q=80"
+    },
+    "2025-09-07": {
+      "place": "Akureyri / Westfjords",
+      "activities": ["Akureyri (capitale del nord)", "Snaefellsnes peninsula"],
+      "accommodation": "Hotel a Stykkisholmur",
+      "categories": ["cultura", "natura"],
+      "image": "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=800&q=80"
+    },
+    "2025-09-08": {
+      "place": "Snaefellsnes / Reykjavik",
+      "activities": ["Kirkjufell", "Arnastapi", "Rientro a Reykjavik"],
+      "accommodation": "",
+      "categories": ["natura", "passeggiata"],
+      "image": "https://images.unsplash.com/photo-1504829857797-ddff29c27927?w=800&q=80"
+    }
+  },
+  "extras": []
+}

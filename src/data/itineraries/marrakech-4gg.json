@@ -1,0 +1,45 @@
+{
+  "id": "marrakech-4gg",
+  "title": "Marrakech e l'Atlante",
+  "country": "Marocco",
+  "continent": "Africa",
+  "coverUrl": "https://images.unsplash.com/photo-1518730518541-d0843268c287?w=800&q=80",
+  "description": "Esplora la città rossa e la bellezza della montagna: mercati, deserto e culture berbere in un viaggio indimenticabile.",
+  "duration": 4,
+  "difficulty": "media",
+  "budget": "basso",
+  "bestPeriod": "Marzo-Maggio, Ottobre-Novembre",
+  "transport": "Taxi, transfer privato, trekking",
+  "tips": "Tratta sempre al mercato (souk). Porta scarpe comode per il trekking. I date sono freschi anche d'inverno.",
+  "days": {
+    "2025-03-15": {
+      "place": "Marrakech",
+      "activities": ["Medina e souk", "Jardin Majorelle", "Piazza Jemaa el-Fna al tramonto"],
+      "accommodation": "Riad nel medina",
+      "categories": ["cultura", "shopping"],
+      "image": "https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=800&q=80"
+    },
+    "2025-03-16": {
+      "place": "Marrakech",
+      "activities": ["Palazzo Bahia", "Museo Yves Saint Laurent", "Hammam tradizionale"],
+      "accommodation": "Riad nel medina",
+      "categories": ["cultura", "benessere"],
+      "image": "https://images.unsplash.com/photo-1518730518541-d0843268c287?w=800&q=80"
+    },
+    "2025-03-17": {
+      "place": "Atlante",
+      "activities": ["Transfer all'Atlante", "Trekking nelle valli", "Notte sotto le stelle"],
+      "accommodation": "Bivouac berbero",
+      "categories": ["natura", "avventura"],
+      "image": "https://images.unsplash.com/photo-1489749798305-4fea3ae63d43?w=800&q=80"
+    },
+    "2025-03-18": {
+      "place": "Atlante / Marrakech",
+      "activities": ["Alba sull'Atlante", "Villaggi berberi", "Rientro a Marrakech"],
+      "accommodation": "",
+      "categories": ["natura", "cultura"],
+      "image": "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=800&q=80"
+    }
+  },
+  "extras": []
+}

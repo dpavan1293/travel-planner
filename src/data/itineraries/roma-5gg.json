@@ -1,0 +1,52 @@
+{
+  "id": "roma-5gg",
+  "title": "Roma in 5 giorni",
+  "country": "Italia",
+  "continent": "Europa",
+  "coverUrl": "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=800&q=80",
+  "description": "Scopri la Città Eterna: dai monumenti antichi ai quartieri più autentici, un itinerario completo per vivere Roma come un locale.",
+  "duration": 5,
+  "difficulty": "facile",
+  "budget": "medio",
+  "bestPeriod": "Aprile-Giugno, Settembre-Ottobre",
+  "transport": "A piedi, metro, bus",
+  "tips": "Prenota i musei Vaticani con almeno 2 settimane di anticipo. La domenica i musei statali sono gratuiti ma molto affollati.",
+  "days": {
+    "2025-04-07": {
+      "place": "Roma",
+      "activities": ["Colosseo e Fori Imperiali", "Palatino", "Piazza Venezia"],
+      "accommodation": "Hotel nel rione Monti",
+      "categories": ["cultura", "storia"],
+      "image": "https://images.unsplash.com/photo-1555992828-ca4dbe41d294?w=800&q=80"
+    },
+    "2025-04-08": {
+      "place": "Roma",
+      "activities": ["Vaticano e Cappella Sistina", "Basilica di San Pietro", "Castel Sant'Angelo"],
+      "accommodation": "Hotel nel rione Monti",
+      "categories": ["cultura", "arte"],
+      "image": "https://images.unsplash.com/photo-1541410854169-52e4a28998c0?w=800&q=80"
+    },
+    "2025-04-09": {
+      "place": "Roma",
+      "activities": ["Pantheon", "Piazza Navona", "Fontana di Trevi", "Spagna"],
+      "accommodation": "Hotel nel rione Monti",
+      "categories": ["cultura", "passeggiata"],
+      "image": "https://images.unsplash.com/photo-1531572753322-ad063cecc140?w=800&q=80"
+    },
+    "2025-04-10": {
+      "place": "Roma",
+      "activities": ["Trastevere", "Villa Borghese", "Pincio al tramonto"],
+      "accommodation": "Hotel nel rione Monti",
+      "categories": ["natura", "cibo"],
+      "image": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800&q=80"
+    },
+    "2025-04-11": {
+      "place": "Roma",
+      "activities": ["Borghese (prenotazione)", "Via del Corso", "Aperitivo in rooftop bar"],
+      "accommodation": "Hotel nel rione Monti",
+      "categories": ["arte", "shopping"],
+      "image": "https://images.unsplash.com/photo-1504699439244-94498e4e0920?w=800&q=80"
+    }
+  },
+  "extras": []
+}

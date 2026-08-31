@@ -3,8 +3,11 @@ import { createPortal } from "react-dom";
 import storage, { authHeaders, onStorageError } from "./storage";
 import netlifyIdentity from "netlify-identity-widget";
 import toucanImage from "./assets/toucan.png";
-import { Plane, Luggage, FileText, Moon, Plus, X, Check, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon, Sparkles, Globe, Clock, Mountain, Wallet, Sun, Navigation, Pencil } from "lucide-react";
-import PUBLIC_ITINERARIES from "./data/public-itineraries.json";
+import { Plane, Luggage, FileText, Moon, Plus, X, Check, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Trash2, GripVertical, CalendarRange, Printer, ArrowLeft, MapPin, ShieldCheck, Syringe, StickyNote, Receipt, ArrowRight, Archive, ArchiveRestore, MoreVertical, LogOut, Image as ImageIcon, Search, ArrowLeftRight, Copy, Share2, Map as MapIcon, Sparkles, Globe, Clock, Mountain, Wallet, Sun, Navigation } from "lucide-react";
+const itineraryModules = import.meta.glob("./data/itineraries/*.json", { eager: true });
+const PUBLIC_ITINERARIES = {
+  itineraries: Object.values(itineraryModules).map((m) => m.default),
+};
 import {
   CATEGORIES,
   EXTRA_META,
@@ -16,6 +19,8 @@ import {
   fromISO,
 } from "./lib/exportTemplate";
 import { routePointsFromList, buildTravelMapSvg } from "./lib/travelMap";
+import AdminHome from "./AdminHome";
+import loaderImg from "./assets/loader.png";
 
 // EXTRA_TYPES aggiunge l'icona lucide-react (usata solo nella UI) ai dati condivisi.
 const EXTRA_ICONS = {
@@ -35,6 +40,10 @@ function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMont
 function formatShortDate(ts) {
   const d = new Date(ts);
   return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3).toLowerCase()} ${d.getFullYear()}`;
+}
+
+export function AirplaneLoader({ size = 48 }) {
+  return <img className="airplane-loader" src={loaderImg} width={size} height={size} alt="" aria-hidden="true" />;
 }
 
 function downloadJSON(filename, obj) {
@@ -447,13 +456,12 @@ const SHARED_STYLES = `
   .empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 72px 0; color: var(--muted); opacity: 0.6; }
   .loading-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 16px; }
   .loading-wrap .empty-hint { padding: 0; }
-  .spinner {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 3px solid rgba(46,111,142,0.18);
-    border-top-color: var(--accent);
+  .airplane-loader {
+    width: 96px; height: 96px;
     animation: spin .8s linear infinite;
+    border-radius: 50%;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin { to { transform: rotate(-360deg); } }
 
   .ai-generating-overlay {
     position: fixed; inset: 0; z-index: 9999;
@@ -473,12 +481,9 @@ const SHARED_STYLES = `
   }
   @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
   .ai-generating-spinner {
-    width: 48px; height: 48px; border-radius: 50%;
-    border: 4px solid rgba(120,60,200,0.12);
-    border-top-color: rgba(120,60,200,0.8);
-    animation: spin 1s linear infinite;
-    filter: drop-shadow(0 0 8px rgba(120,60,200,0.25));
+    display: inline-flex; align-items: center; justify-content: center;
   }
+  .ai-generating-spinner .airplane-loader { width: 56px; height: 56px; filter: hue-rotate(260deg) brightness(1.2); }
   @keyframes gentleBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
   .ai-generating-text {
     font-size: 17px; font-weight: 600; color: var(--ink); text-align: center; min-height: 24px;
@@ -553,10 +558,11 @@ const SHARED_STYLES = `
   .explore-card-meta span { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
 
   .explore-detail-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(15,26,33,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s; }
-  .explore-detail { background: #fff; border-radius: 22px; width: 100%; max-width: 600px; max-height: 100%; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp .25s cubic-bezier(0.16,1,0.3,1); scrollbar-width: none; }
+  .explore-detail { position: relative; background: #fff; border-radius: 22px; width: 100%; max-width: 600px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp .25s cubic-bezier(0.16,1,0.3,1); }
   .explore-detail::-webkit-scrollbar { display: none; }
-  .explore-detail-cover { width: 100%; height: 220px; object-fit: cover; border-radius: 22px 22px 0 0; }
-  .explore-detail-body { padding: 24px; }
+  .explore-detail-cover { width: 100%; height: 220px; object-fit: cover; border-radius: 22px 22px 0 0; flex-shrink: 0; }
+  .explore-detail-body { padding: 24px; flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .explore-detail-body::-webkit-scrollbar { display: none; }
   .explore-detail-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; color: var(--ink); cursor: pointer; transition: box-shadow .15s; }
   .explore-detail-close:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
   .explore-detail-country { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--teal); margin-bottom: 4px; font-family: var(--font-mono); }
@@ -576,7 +582,7 @@ const SHARED_STYLES = `
   .explore-day-num { width: 28px; height: 28px; border-radius: 8px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; font-family: var(--font-mono); }
   .explore-day-place { font-size: 13px; font-weight: 500; }
   .explore-day-acts { font-size: 12px; color: var(--muted); }
-  .explore-import-btn { width: 100%; padding: 14px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--teal), var(--accent-dark)); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: filter .15s; font-family: var(--font-display); }
+  .explore-import-btn { padding: 14px 24px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--teal), var(--accent-dark)); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: filter .15s; font-family: var(--font-display); flex-shrink: 0; margin: 0 24px 24px; }
   .explore-import-btn:hover { filter: brightness(1.08); }
   .explore-import-btn:disabled { opacity: .5; cursor: default; }
 
@@ -586,8 +592,8 @@ const SHARED_STYLES = `
 
   .admin-header { text-align: center; margin-bottom: 28px; }
   .admin-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--teal); color: #fff; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: var(--font-mono); }
-  .admin-import-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 16px; border: 2px dashed var(--glass-border); border-radius: 16px; background: rgba(255,255,255,0.35); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--teal); font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s; font-family: var(--font-display); margin-bottom: 24px; }
-  .admin-import-btn:hover { border-color: var(--teal); background: rgba(46,111,142,0.06); }
+  .admin-import-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border: none; border-radius: 16px; background: var(--teal); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: var(--font-display); margin-bottom: 24px; box-shadow: 0 4px 14px rgba(46,111,142,0.35); }
+  .admin-import-btn:hover { filter: brightness(1.1); box-shadow: 0 6px 20px rgba(46,111,142,0.45); transform: translateY(-1px); }
   .admin-card-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
   .admin-card-actions button { width: 32px; height: 32px; border: none; border-radius: 8px; background: rgba(0,0,0,0.04); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   .admin-card-actions button:hover { background: rgba(0,0,0,0.08); color: var(--ink); }
@@ -828,9 +834,10 @@ const SHARED_STYLES = `
   .loc-search-ic { position: absolute; left: 12px; color: var(--muted); pointer-events: none; }
   .loc-search-row .tp-input { padding-left: 34px; padding-right: 34px; }
   .loc-spinner {
-    position: absolute; right: 12px; width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid rgba(46,111,142,0.18); border-top-color: var(--accent); animation: spin .7s linear infinite;
+    position: absolute; right: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
   }
+  .loc-spinner .airplane-loader { width: 20px; height: 20px; animation-duration: .7s; }
   .loc-results {
     position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
     background: rgba(255,255,255,0.96); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
@@ -964,265 +971,9 @@ const SHARED_STYLES = `
 
 const CONTINENTS = ["Europa", "Asia", "Africa", "Americhe", "Oceania"];
 const DIFFICULTY_COLORS = { facile: "#2ecc71", media: "#f39c12", difficile: "#e74c3c" };
-const ADMIN_EMAILS = ["diego@arsenalia.com"];
+const ADMIN_EMAILS = ["ignorman93@gmail.com","dev@localhost","admin"];
 
-function AdminImportModal({ onClose, onSave, editItem }) {
-  const [jsonInput, setJsonInput] = useState("");
-  const [parsed, setParsed] = useState(null);
-  const [title, setTitle] = useState(editItem?.title || "");
-  const [coverUrl, setCoverUrl] = useState(editItem?.coverUrl || "");
-  const [continent, setContinent] = useState(editItem?.continent || "Europa");
-  const [country, setCountry] = useState(editItem?.country || "");
-  const [description, setDescription] = useState(editItem?.description || "");
-  const [difficulty, setDifficulty] = useState(editItem?.difficulty || "facile");
-  const [budget, setBudget] = useState(editItem?.budget || "medio");
-  const [bestPeriod, setBestPeriod] = useState(editItem?.bestPeriod || "");
-  const [saving, setSaving] = useState(false);
-  const fileRef = useRef(null);
 
-  useEffect(() => {
-    if (editItem) {
-      setJsonInput(JSON.stringify({ tripTitle: editItem.title, days: editItem.days || {}, extras: editItem.extras || [] }, null, 2));
-      handleParseJson(JSON.stringify({ tripTitle: editItem.title, days: editItem.days || {}, extras: editItem.extras || [] }));
-    }
-  }, [editItem]);
-
-  const handleParseJson = (text) => {
-    setJsonInput(text);
-    try {
-      const data = JSON.parse(text);
-      if (data && (data.days || data.tripTitle)) {
-        setParsed(data);
-        if (!title && data.tripTitle) setTitle(data.tripTitle);
-        if (!coverUrl && data.coverImageUrl) setCoverUrl(data.coverImageUrl);
-      } else {
-        setParsed(null);
-      }
-    } catch {
-      setParsed(null);
-    }
-  };
-
-  const handleFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => handleParseJson(ev.target.result);
-    reader.readAsText(file);
-  };
-
-  const daysCount = parsed?.days ? Object.keys(parsed.days).length : 0;
-
-  const handleSave = async () => {
-    if (!parsed || !title.trim()) return;
-    setSaving(true);
-    const id = editItem?.id || title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
-    const data = {
-      id,
-      title: title.trim(),
-      coverUrl,
-      continent,
-      country: country.trim(),
-      description: description.trim(),
-      difficulty,
-      budget,
-      bestPeriod: bestPeriod.trim(),
-      days: parsed.days || {},
-      extras: parsed.extras || [],
-      duration: daysCount,
-    };
-    await onSave(id, data);
-    setSaving(false);
-  };
-
-  return (
-    <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="admin-modal-head">
-          <h2>{editItem ? "Modifica itinerario" : "Importa itinerario pubblico"}</h2>
-          <button className="icon-btn" onClick={onClose}><X size={18} /></button>
-        </div>
-        <div className="admin-modal-body">
-          <div className="admin-modal-section">
-            <h3>Dati itinerario</h3>
-            {parsed ? (
-              <div className="admin-json-preview">{daysCount} giorni trovati — {parsed.tripTitle || "Senza titolo"}</div>
-            ) : (
-              <div className="admin-json-upload" onClick={() => fileRef.current?.click()}>
-                <p>Incolla il JSON qui sotto oppure carica un file</p>
-                <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleFile} />
-              </div>
-            )}
-            <textarea
-              className="admin-field"
-              style={{ width: "100%", minHeight: 100, padding: 10, borderRadius: 10, border: "1px solid var(--glass-border)", fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical" }}
-              value={jsonInput}
-              onChange={(e) => handleParseJson(e.target.value)}
-              placeholder='{"tripTitle": "...", "days": {...}, "extras": [...]}'
-            />
-          </div>
-
-          <div className="admin-modal-section">
-            <h3>Metadati pubblici</h3>
-            <div className="admin-field">
-              <label>Titolo pubblico</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Roma in 5 giorni" />
-            </div>
-            <div className="admin-field">
-              <label>URL Copertina</label>
-              <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div className="admin-field">
-                <label>Continente</label>
-                <select value={continent} onChange={(e) => setContinent(e.target.value)}>
-                  {CONTINENTS.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="admin-field">
-                <label>Nazione</label>
-                <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Es. Italia" />
-              </div>
-            </div>
-            <div className="admin-field">
-              <label>Descrizione</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Breve descrizione dell'itinerario..." rows={2} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <div className="admin-field">
-                <label>Difficoltà</label>
-                <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
-                  <option value="facile">Facile</option>
-                  <option value="media">Media</option>
-                  <option value="difficile">Difficile</option>
-                </select>
-              </div>
-              <div className="admin-field">
-                <label>Budget</label>
-                <select value={budget} onChange={(e) => setBudget(e.target.value)}>
-                  <option value="basso">Basso</option>
-                  <option value="medio">Medio</option>
-                  <option value="alto">Alto</option>
-                </select>
-              </div>
-              <div className="admin-field">
-                <label>Miglior periodo</label>
-                <input value={bestPeriod} onChange={(e) => setBestPeriod(e.target.value)} placeholder="Es. Aprile-Ottobre" />
-              </div>
-            </div>
-          </div>
-
-          {parsed && (
-            <div className="admin-modal-section">
-              <h3>Anteprima ({daysCount} giorni)</h3>
-              <div className="admin-days-preview">
-                {Object.entries(parsed.days || {}).map(([iso, day], i) => (
-                  <div key={iso} style={{ padding: "4px 0", borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
-                    <strong>Giorno {i + 1}</strong> — {day.place}: {(day.activities || []).join(", ")}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="admin-modal-actions">
-            <button className="admin-cancel-btn" onClick={onClose}>Annulla</button>
-            <button className="admin-publish-btn" onClick={handleSave} disabled={!parsed || !title.trim() || saving}>
-              {saving ? "Salvataggio..." : editItem ? "Salva modifiche" : "Pubblica"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminHome({ user }) {
-  const [itineraries, setItineraries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-
-  const load = async () => {
-    setLoading(true);
-    const res = await storage.getPublicItineraries();
-    setItineraries(res?.itineraries || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const handleSave = async (id, data) => {
-    await storage.savePublicItinerary(id, data);
-    setShowModal(false);
-    setEditItem(null);
-    load();
-  };
-
-  const handleDelete = async (id, title) => {
-    if (!window.confirm(`Eliminare "${title}"?`)) return;
-    await storage.deletePublicItinerary(id);
-    load();
-  };
-
-  const handleEdit = (item) => {
-    setEditItem(item);
-    setShowModal(true);
-  };
-
-  const handleNew = () => {
-    setEditItem(null);
-    setShowModal(true);
-  };
-
-  return (
-    <div className="explore-view">
-      <div className="admin-header">
-        <span className="admin-badge">Admin</span>
-        <p style={{ fontSize: 14, color: "var(--muted)", margin: 0 }}>Gestione itinerari pubblici</p>
-      </div>
-
-      <button className="admin-import-btn" onClick={handleNew}>
-        <Plus size={18} /> Importa itinerario pubblico
-      </button>
-
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 40 }}><p className="empty-hint">Caricamento...</p></div>
-      ) : itineraries.length === 0 ? (
-        <div className="explore-empty">
-          <Globe size={40} className="explore-empty-icon" />
-          <p>Nessun itinerario pubblico ancora.</p>
-        </div>
-      ) : (
-        <div className="explore-grid">
-          {itineraries.map((it) => (
-            <div key={it.id} className="explore-card">
-              <img className="explore-card-img" src={it.coverUrl} alt={it.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; }} />
-              <div className="explore-card-body" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p className="explore-card-country">{it.country} — {it.continent}</p>
-                  <p className="explore-card-title" style={{ margin: 0 }}>{it.title}</p>
-                </div>
-                <div className="admin-card-actions">
-                  <button onClick={() => handleEdit(it)} title="Modifica"><Pencil size={14} /></button>
-                  <button className="delete-btn" onClick={() => handleDelete(it.id, it.title)} title="Elimina"><Trash2 size={14} /></button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showModal && (
-        <AdminImportModal
-          onClose={() => { setShowModal(false); setEditItem(null); }}
-          onSave={handleSave}
-          editItem={editItem}
-        />
-      )}
-    </div>
-  );
-}
 
 function ExploreView({ onImport, user }) {
   const [search, setSearch] = useState("");
@@ -1230,8 +981,21 @@ function ExploreView({ onImport, user }) {
   const [selected, setSelected] = useState(null);
   const [importing, setImporting] = useState(false);
   const [all, setAll] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(6);
 
   useEffect(() => {
+    const handler = (e) => {
+      if (e.key === "g" && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
+        setLoading((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
     storage.getPublicItineraries().then((res) => {
       if (res?.itineraries?.length) {
         setAll(res.itineraries);
@@ -1240,6 +1004,8 @@ function ExploreView({ onImport, user }) {
       }
     }).catch(() => {
       setAll(PUBLIC_ITINERARIES.itineraries || []);
+    }).finally(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -1255,6 +1021,11 @@ function ExploreView({ onImport, user }) {
       (it.tips && it.tips.toLowerCase().includes(q))
     );
   });
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
+  useEffect(() => { setVisibleCount(6); }, [search, continent]);
 
   const handleImport = async (it) => {
     if (!user) return;
@@ -1309,29 +1080,43 @@ function ExploreView({ onImport, user }) {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="loading-wrap">
+          <AirplaneLoader />
+          <p className="empty-hint">Caricamento itinerari...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="explore-empty">
           <Globe size={40} className="explore-empty-icon" />
           <p>Nessun itinerario trovato.</p>
         </div>
       ) : (
-        <div className="explore-grid">
-          {filtered.map((it) => (
-            <div key={it.id} className="explore-card" onClick={() => setSelected(it)}>
-              <img className="explore-card-img" src={it.coverUrl} alt={it.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; e.currentTarget.style.display = "block"; }} />
-              <div className="explore-card-body">
-                <p className="explore-card-country">{it.country} — {it.continent}</p>
-                <p className="explore-card-title">{it.title}</p>
-                <p className="explore-card-desc">{it.description}</p>
-                <div className="explore-card-meta">
-                  <span><Clock size={12} /> {it.duration}gg</span>
-                  <span><Mountain size={12} /> {it.difficulty}</span>
-                  <span><Wallet size={12} /> {it.budget}</span>
+        <>
+          <div className="explore-grid">
+            {visible.map((it) => (
+              <div key={it.id} className="explore-card" onClick={() => setSelected(it)}>
+                <img className="explore-card-img" src={it.coverUrl} alt={it.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; e.currentTarget.style.display = "block"; }} />
+                <div className="explore-card-body">
+                  <p className="explore-card-country">{it.country} — {it.continent}</p>
+                  <p className="explore-card-title">{it.title}</p>
+                  <p className="explore-card-desc">{it.description}</p>
+                  <div className="explore-card-meta">
+                    <span><Clock size={12} /> {it.duration}gg</span>
+                    <span><Mountain size={12} /> {it.difficulty}</span>
+                    <span><Wallet size={12} /> {it.budget}</span>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+          {hasMore && (
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <button className="admin-import-btn" onClick={() => setVisibleCount((c) => c + 6)} style={{ width: "auto", padding: "12px 32px", marginBottom: 0 }}>
+                Carica altri
+              </button>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
 
       {selected && (
@@ -1380,10 +1165,10 @@ function ExploreView({ onImport, user }) {
                 </div>
               )}
 
-              <button className="explore-import-btn" onClick={() => handleImport(selected)} disabled={importing || !user}>
-                {importing ? "Importazione..." : user ? "Importa come viaggio" : "Accedi per importare"}
-              </button>
             </div>
+            <button className="explore-import-btn" onClick={() => handleImport(selected)} disabled={importing || !user}>
+              {importing ? "Importazione..." : user ? "Importa come viaggio" : "Accedi per importare"}
+            </button>
           </div>
         </div>
       )}
@@ -1398,7 +1183,24 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const [importState, setImportState] = useState(pendingShareToken ? "pending" : "none");
   const [importError, setImportError] = useState("");
   const [storageError, setStorageError] = useState(null);
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email);
+  const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || import.meta.env.VITE_DEBUG_ADMIN === "1");
+  const [adminMode, setAdminMode] = useState(() => window.location.pathname === "/admin");
+
+  const switchToAdmin = () => {
+    window.history.pushState({}, "", "/admin");
+    setAdminMode(true);
+  };
+
+  const switchToClient = () => {
+    window.history.pushState({}, "", "/");
+    setAdminMode(false);
+  };
+
+  useEffect(() => {
+    const onPop = () => setAdminMode(window.location.pathname === "/admin");
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onStorageError(({ status }) => {
@@ -1607,12 +1409,15 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
           <>
             {view === "loading" && (
               <div className="loading-wrap">
-                <span className="spinner" aria-hidden="true"></span>
+                <AirplaneLoader />
                 <p className="empty-hint">Caricamento dei tuoi viaggi...</p>
               </div>
             )}
-            {view === "launcher" && isAdmin && (
-              <AdminHome user={user} />
+            {view === "launcher" && isAdmin && adminMode && (
+              <AdminHome user={user} onSwitchToClient={switchToClient} />
+            )}
+            {view === "launcher" && isAdmin && !adminMode && (
+              <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} onNavigateToPlanner={(id) => { setCurrentTripId(id); setView("planner"); }} onSwitchToAdmin={switchToAdmin} />
             )}
             {view === "launcher" && !isAdmin && (
               <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} onNavigateToPlanner={(id) => { setCurrentTripId(id); setView("planner"); }} />
@@ -1633,7 +1438,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   );
 }
 
-function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchive, onImport, user, onLogout, onNavigateToPlanner }) {
+function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchive, onImport, user, onLogout, onNavigateToPlanner, onSwitchToAdmin }) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const inputRef = useRef(null);
@@ -1927,6 +1732,9 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
                   <p className="account-name">{user.user_metadata?.full_name || user.email}</p>
                   <p className="account-email">{user.email}</p>
                 </div>
+                {onSwitchToAdmin && (
+                  <button onClick={onSwitchToAdmin}><ShieldCheck size={14} /> Modalità admin</button>
+                )}
                 <button onClick={onLogout}><LogOut size={14} /> Esci</button>
               </div>
             </>
@@ -2354,8 +2162,8 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
             <div className="modal-body">
               {importing ? (
                 <div className="loading-wrap">
-                  <span className="spinner" aria-hidden="true"></span>
-                  <p className="empty-hint">Importazione di “{importName}”...</p>
+                  <AirplaneLoader />
+                  <p className="empty-hint">Importazione di "{importName}"...</p>
                 </div>
               ) : (
                 <>
@@ -2384,7 +2192,9 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
 
       {(aiGenerating || debugOverlay) && (
         <div className="ai-generating-overlay">
-          <div className="ai-generating-spinner"></div>
+          <div className="ai-generating-spinner">
+            <AirplaneLoader size={32} />
+          </div>
           <span className="ai-generating-text">
             {[
               "Stiamo cercando le destinazioni migliori...",
@@ -2824,7 +2634,7 @@ function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
     <>
       {!loaded && (
         <div className="loading-wrap">
-          <span className="spinner" aria-hidden="true"></span>
+          <AirplaneLoader />
           <p className="empty-hint">Caricamento itinerario...</p>
         </div>
       )}
@@ -3706,7 +3516,7 @@ function MapCard({ extra, onChange }) {
               onChange={(e) => geo.handleChange(e.target.value)}
               onFocus={() => { if (geo.results.length || geo.loading || geo.error) geo.setOpen(true); }}
             />
-            {geo.loading && <span className="loc-spinner" aria-hidden="true"></span>}
+            {geo.loading && <div className="loc-spinner" aria-hidden="true"><AirplaneLoader size={10} /></div>}
           </div>
           {geo.open && (
             <div className="loc-results">
@@ -3811,7 +3621,7 @@ function UnsplashPicker({ open, query, onClose, onSelect }) {
         </div>
 
         <div className="modal-body">
-          {loading && <p className="empty-hint">Caricamento foto...</p>}
+          {loading && <div className="loading-wrap" style={{ padding: "20px 0" }}><AirplaneLoader /><p className="empty-hint">Caricamento foto...</p></div>}
           {!loading && error && <p className="empty-hint" style={{ color: "var(--coral)" }}>{error}</p>}
           {!loading && !error && results.length === 0 && (
             <p className="empty-hint">Nessuna foto trovata. Prova un'altra ricerca.</p>

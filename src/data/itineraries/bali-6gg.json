@@ -1,0 +1,59 @@
+{
+  "id": "bali-6gg",
+  "title": "Bali: templi e spiagge",
+  "country": "Indonesia",
+  "continent": "Asia",
+  "coverUrl": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80",
+  "description": "L'isola degli dèi: templi sospesi, terrazze di riso, surf e spiagge paradisiache in un itinerario di 6 giorni.",
+  "duration": 6,
+  "difficulty": "facile",
+  "budget": "basso",
+  "bestPeriod": "Aprile-Ottobre (stagione secca)",
+  "transport": "Scooter, transfer privato, taxi",
+  "tips": "Il scooter è il mezzo migliore ma servono patenti internazionali. Copriti le spalle ai templi. Evita Kuta se cercate relax.",
+  "days": {
+    "2025-07-01": {
+      "place": "Ubud",
+      "activities": ["Arrivo", "Tegallalang Rice Terraces", "Ubud Monkey Forest"],
+      "accommodation": "Villa a Ubud",
+      "categories": ["natura", "cultura"],
+      "image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80"
+    },
+    "2025-07-02": {
+      "place": "Ubud",
+      "activities": ["Tirta Empul Temple", "Tegenungan Waterfall", "Cooking class balinese"],
+      "accommodation": "Villa a Ubud",
+      "categories": ["cultura", "natura", "cibo"],
+      "image": "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800&q=80"
+    },
+    "2025-07-03": {
+      "place": "Nusa Penida",
+      "activities": ["Traghetto a Nusa Penida", "Kelingking Beach", "Angel's Billabong"],
+      "accommodation": "Guesthouse a Nusa Penida",
+      "categories": ["natura", "avventura"],
+      "image": "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80"
+    },
+    "2025-07-04": {
+      "place": "Nusa Penida / Seminyak",
+      "activities": ["Snorkeling con manta ray", "Rientro a Bali", "Seminyak beach"],
+      "accommodation": "Hotel a Seminyak",
+      "categories": ["avventura", "relax"],
+      "image": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80"
+    },
+    "2025-07-05": {
+      "place": "Uluwatu",
+      "activities": ["Uluwatu Temple", "Kecak fire dance", "Jimbaran seafood dinner"],
+      "accommodation": "Hotel a Seminyak",
+      "categories": ["cultura", "cibo"],
+      "image": "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800&q=80"
+    },
+    "2025-07-06": {
+      "place": "Seminyak",
+      "activities": ["Yoga al tramonto", "Beach club", "Partenza"],
+      "accommodation": "",
+      "categories": ["relax", "benessere"],
+      "image": "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=800&q=80"
+    }
+  },
+  "extras": []
+}

@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Public Itinerary",
+  "description": "Schema di un itinerario pubblico da importare nel Travel Planner",
+  "type": "object",
+  "required": ["title", "country", "continent", "description", "difficulty", "budget", "bestPeriod", "days"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "ID univrico generato automaticamente"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Titolo pubblico dell'itinerario"
+    },
+    "coverUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL dell'immagine di copertina"
+    },
+    "continent": {
+      "type": "string",
+      "enum": ["Europa", "Asia", "Nord America", "Sud America", "Africa", "Oceania"],
+      "description": "Continente"
+    },
+    "country": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Paese"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Descrizione dell'itinerario"
+    },
+    "duration": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Numero di giorni (derivato da days)"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["facile", "media", "difficile"],
+      "description": "Livello di difficoltà"
+    },
+    "budget": {
+      "type": "string",
+      "enum": ["basso", "medio", "alto"],
+      "description": "Budget indicativo"
+    },
+    "bestPeriod": {
+      "type": "string",
+      "description": "Miglior periodo per visitare"
+    },
+    "transport": {
+      "type": "string",
+      "description": "Mezzi di trasporto consigliati"
+    },
+    "tips": {
+      "type": "string",
+      "description": "Suggerimenti per il viaggiatore"
+    },
+    "sourceUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL di provenienza dell'itinerario (campo nascosto, non visibile agli utenti)"
+    },
+    "days": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Giorni dell'itinerario, chiave = data ISO (YYYY-MM-DD)",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["place", "activities"],
+        "properties": {
+          "place": {
+            "type": "string",
+            "description": "Località del giorno"
+          },
+          "activities": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "description": "Attività previste"
+          },
+          "accommodation": {
+            "type": "string",
+            "description": "Alloggio consigliato"
+          },
+          "categories": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Categorie (cultura, natura, cibo, etc.)"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL immagine del giorno"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "extras": {
+      "type": "array",
+      "description": "Extra / opzioni aggiuntive",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
