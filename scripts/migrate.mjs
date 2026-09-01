@@ -7,17 +7,20 @@ const base = process.cwd();
 const migrationsDir = join(base, "netlify/database/migrations");
 
 const migrationFiles = readdirSync(migrationsDir)
-  .filter((f) => f.endsWith(".sql") && !f.startsWith("0004"))
+  .filter((f) => f.endsWith(".sql"))
   .sort();
 
 for (const file of migrationFiles) {
   const raw = readFileSync(join(migrationsDir, file), "utf8");
-  console.log(`Running ${file} ...`);
-  await sql.query(raw);
+  const statements = raw.split(";").map((s) => s.trim()).filter(Boolean);
+  console.log(`Running ${file} (${statements.length} statements) ...`);
+  for (const stmt of statements) {
+    await sql.query(stmt);
+  }
   console.log(`Done.`);
 }
 
-console.log("Running 0004_seed: inserting itineraries from JSON files ...");
+console.log("Running seed: inserting itineraries from JSON files ...");
 const itinerariesDir = join(base, "src/data/itineraries");
 const jsonFiles = readdirSync(itinerariesDir).filter((f) => f.endsWith(".json"));
 
