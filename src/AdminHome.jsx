@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import storage from "./storage";
-import { Plus, X, Globe, Pencil, Trash2, ArrowLeftRight } from "lucide-react";
+import { Plus, X, Globe, Pencil, Trash2, ArrowLeftRight, Search } from "lucide-react";
 import { AirplaneLoader } from "./App";
 const CONTINENTS = ["Europa", "Asia", "Africa", "Americhe", "Oceania"];
 
@@ -17,7 +17,9 @@ function AdminImportModal({ onClose, onSave, editItem }) {
   const [bestPeriod, setBestPeriod] = useState(editItem?.bestPeriod || "");
   const [sourceUrl, setSourceUrl] = useState(editItem?.sourceUrl || "");
   const [saving, setSaving] = useState(false);
+  const [coverLoading, setCoverLoading] = useState(false);
   const fileRef = useRef(null);
+  const hasAutoPopulated = useRef(false);
 
   useEffect(() => {
     if (editItem) {
@@ -31,10 +33,35 @@ function AdminImportModal({ onClose, onSave, editItem }) {
     try {
       const data = JSON.parse(text);
       if (data && (data.days || data.tripTitle)) {
+        const isFirstParse = !hasAutoPopulated.current;
         setParsed(data);
-        if (!title && (data.tripTitle || data.title)) setTitle(data.tripTitle || data.title);
-        if (!coverUrl && data.coverImageUrl) setCoverUrl(data.coverImageUrl);
-      if (!sourceUrl && data.sourceUrl) setSourceUrl(data.sourceUrl);
+        if (isFirstParse) {
+          hasAutoPopulated.current = true;
+          const newTitle = data.tripTitle || data.title || "";
+          if (!title && newTitle) setTitle(newTitle);
+          const existingCover = data.coverImageUrl || data.coverUrl || "";
+          if (!coverUrl && existingCover) {
+            setCoverUrl(existingCover);
+          } else if (!coverUrl && !existingCover && newTitle) {
+            const query = data.country || newTitle;
+            setCoverLoading(true);
+            fetch(`/.netlify/functions/unsplash?q=${encodeURIComponent(query)}`)
+              .then((r) => r.json())
+              .then((res) => {
+                const first = res.results?.[0];
+                if (first?.full) setCoverUrl(first.full);
+              })
+              .catch(() => {})
+              .finally(() => setCoverLoading(false));
+          }
+          if (!sourceUrl && data.sourceUrl) setSourceUrl(data.sourceUrl);
+          if (data.continent) setContinent(data.continent);
+          if (data.country) setCountry(data.country);
+          if (data.description) setDescription(data.description);
+          if (data.difficulty) setDifficulty(data.difficulty);
+          if (data.budget) setBudget(data.budget);
+          if (data.bestPeriod) setBestPeriod(data.bestPeriod);
+        }
       } else {
         setParsed(null);
       }
@@ -110,7 +137,7 @@ function AdminImportModal({ onClose, onSave, editItem }) {
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Roma in 5 giorni" />
             </div>
             <div className="admin-field">
-              <label>URL Copertina</label>
+              <label>URL Copertina {coverLoading && <span style={{ fontSize: 11, color: "var(--muted)" }}>— cerco su Unsplash...</span>}</label>
               <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -187,6 +214,8 @@ export default function AdminHome({ user, onSwitchToClient }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [search, setSearch] = useState("");
+  const [continent, setContinent] = useState("Tutti");
 
   const load = async () => {
     setLoading(true);
@@ -220,6 +249,18 @@ export default function AdminHome({ user, onSwitchToClient }) {
     setShowModal(true);
   };
 
+  const filtered = itineraries.filter((it) => {
+    const matchContinent = continent === "Tutti" || it.continent === continent;
+    if (!matchContinent) return false;
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      it.title.toLowerCase().includes(q) ||
+      (it.country && it.country.toLowerCase().includes(q)) ||
+      (it.description && it.description.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="explore-view">
       <div className="admin-header">
@@ -227,7 +268,7 @@ export default function AdminHome({ user, onSwitchToClient }) {
         <p style={{ fontSize: 14, color: "var(--muted)", margin: 0 }}>Gestione itinerari pubblici</p>
       </div>
 
-      <button className="admin-import-btn" onClick={onSwitchToClient} style={{ marginBottom: 12, background: "rgba(255,255,255,0.35)", color: "var(--teal)", boxShadow: "none", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", border: "1px solid var(--glass-border)" }}>
+      <button className="admin-import-btn" onClick={onSwitchToClient} style={{ marginBottom: 12 }}>
         <ArrowLeftRight size={18} /> Passa alla modalità utente
       </button>
 
@@ -235,19 +276,44 @@ export default function AdminHome({ user, onSwitchToClient }) {
         <Plus size={18} /> Importa itinerario pubblico
       </button>
 
+      {!loading && itineraries.length > 0 && (
+        <>
+          <div className="explore-search-wrap">
+            <Search size={16} className="search-icon" />
+            <input
+              className="explore-search"
+              placeholder="Cerca per titolo, paese o parola chiave..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="explore-chips">
+            {["Tutti", ...CONTINENTS].map((c) => (
+              <button
+                key={c}
+                className={`explore-chip${continent === c ? " active" : ""}`}
+                onClick={() => setContinent(c)}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       {loading ? (
         <div className="loading-wrap">
           <AirplaneLoader />
           <p className="empty-hint">Caricamento...</p>
         </div>
-      ) : itineraries.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div className="explore-empty">
           <Globe size={40} className="explore-empty-icon" />
-          <p>Nessun itinerario pubblico ancora.</p>
+          <p>Nessun itinerario pubblico trovato.</p>
         </div>
       ) : (
         <div className="explore-grid">
-          {itineraries.map((it) => (
+          {filtered.map((it) => (
             <div key={it.id} className="explore-card">
               <img className="explore-card-img" src={it.coverUrl} alt={it.title} onError={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, #1F3A4D, #2E6F8E)"; }} />
               <div className="explore-card-body" style={{ display: "flex", alignItems: "center", gap: 10 }}>

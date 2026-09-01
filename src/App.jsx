@@ -20,7 +20,7 @@ import {
 } from "./lib/exportTemplate";
 import { routePointsFromList, buildTravelMapSvg } from "./lib/travelMap";
 import AdminHome from "./AdminHome";
-import loaderImg from "./assets/loader.png";
+import loaderImg from "./assets/airplane.svg";
 
 // EXTRA_TYPES aggiunge l'icona lucide-react (usata solo nella UI) ai dati condivisi.
 const EXTRA_ICONS = {
@@ -98,8 +98,8 @@ const SHARED_STYLES = `
         gap: 2px;
         width: fit-content;
         margin: 0 auto;
-        padding: 4px 6px;
-        border-radius: 18px;
+        padding: 5px 7px;
+        border-radius: 22px;
         background: #eee;
         border: 1px solid var(--glass-border);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
@@ -113,10 +113,10 @@ const SHARED_STYLES = `
     .travel-filter-option {
         border: none;
         background: transparent;
-        padding: 6px 18px;
-        border-radius: 17px;
+        padding: 7px 22px;
+        border-radius: 20px;
         font-family: inherit;
-        font-size: 11.5px;
+        font-size: 14px;
         font-weight: 500;
         color: rgba(30, 55, 60, 0.75);
         cursor: pointer;
@@ -580,8 +580,8 @@ const SHARED_STYLES = `
   .explore-day-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
   .explore-day-item:last-child { border-bottom: none; }
   .explore-day-num { width: 28px; height: 28px; border-radius: 8px; background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; font-family: var(--font-mono); }
-  .explore-day-place { font-size: 13px; font-weight: 500; }
-  .explore-day-acts { font-size: 12px; color: var(--muted); }
+  .explore-day-place { font-size: 13px; font-weight: 500; text-align: left; }
+  .explore-day-acts { font-size: 12px; color: var(--muted); text-align: left; }
   .explore-import-btn { padding: 14px 24px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--teal), var(--accent-dark)); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: filter .15s; font-family: var(--font-display); flex-shrink: 0; margin: 0 24px 24px; }
   .explore-import-btn:hover { filter: brightness(1.08); }
   .explore-import-btn:disabled { opacity: .5; cursor: default; }
@@ -591,9 +591,9 @@ const SHARED_STYLES = `
   .explore-empty p { font-size: 14px; color: var(--muted); margin: 0; }
 
   .admin-header { text-align: center; margin-bottom: 28px; }
-  .admin-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--teal); color: #fff; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: var(--font-mono); }
-  .admin-import-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border: none; border-radius: 16px; background: var(--teal); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: all .15s; font-family: var(--font-display); margin-bottom: 24px; box-shadow: 0 4px 14px rgba(46,111,142,0.35); }
-  .admin-import-btn:hover { filter: brightness(1.1); box-shadow: 0 6px 20px rgba(46,111,142,0.45); transform: translateY(-1px); }
+  .admin-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--teal); color: #fff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: var(--font-mono); }
+  .admin-import-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border: 1px solid var(--glass-border); border-radius: 16px; background: rgba(255,255,255,0.4); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); color: var(--muted); font-size: 16px; cursor: pointer; transition: all .2s; font-family: Arial; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(15,30,45,0.08); }
+  .admin-import-btn:hover { background: rgba(255,255,255,0.55); box-shadow: 0 6px 24px rgba(15,30,45,0.12); transform: translateY(-1px); }
   .admin-card-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
   .admin-card-actions button { width: 32px; height: 32px; border: none; border-radius: 8px; background: rgba(0,0,0,0.04); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   .admin-card-actions button:hover { background: rgba(0,0,0,0.08); color: var(--ink); }
@@ -1032,7 +1032,7 @@ function ExploreView({ onImport, user }) {
     setImporting(true);
     try {
       const id = uid();
-      const title = `[Esplora] ${it.title}`;
+      const title = it.title;
       const days = {};
       if (it.days) {
         Object.entries(it.days).forEach(([iso, entry]) => {
@@ -1111,7 +1111,7 @@ function ExploreView({ onImport, user }) {
           </div>
           {hasMore && (
             <div style={{ textAlign: "center", padding: "24px 0" }}>
-              <button className="admin-import-btn" onClick={() => setVisibleCount((c) => c + 6)} style={{ width: "auto", padding: "12px 32px", marginBottom: 0 }}>
+              <button className="back-link" onClick={() => setVisibleCount((c) => c + 6)} style={{ margin: "0 auto", fontSize: 13, padding: "8px 20px" }}>
                 Carica altri
               </button>
             </div>
@@ -2091,7 +2091,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
                 className={`travel-filter-option${filter === "upcoming" ? " active" : ""}`}
                 onClick={() => setFilter("upcoming")}
               >
-                In arrivo
+                Itinerari
               </button>
               <button
                 className={`travel-filter-option${filter === "archived" ? " active" : ""}`}
@@ -2117,7 +2117,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
                 <input ref={fileInputRef} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} />
               </label>
             </div>
-            <p className="app-version">TucanoPlanner v1.1.0 — by Diego</p>
+            <p className="app-version">TucanoPlanner v1.2.0 — by Diego</p>
         </div>
       )}
 

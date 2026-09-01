@@ -17,7 +17,29 @@
 import netlifyIdentity from "netlify-identity-widget";
 
 const FN_URL = "/.netlify/functions/storage";
-const PUBLIC_FN_URL = "/.netlify/functions/public-itineraries";
+
+const bundledModules = import.meta.glob("./data/itineraries/*.json", { eager: true });
+const BUNDLED_ITINERARIES = Object.values(bundledModules).map((m) => m.default);
+
+const PUBLIC_STORAGE_KEY = "public_itineraries";
+
+function loadLocalPublic() {
+  try {
+    const raw = localStorage.getItem(PUBLIC_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function saveLocalPublic(list) {
+  localStorage.setItem(PUBLIC_STORAGE_KEY, JSON.stringify(list));
+}
+
+function mergePublic(local) {
+  const base = new Map(BUNDLED_ITINERARIES.map((it) => [it.id, it]));
+  if (local) local.forEach((it) => base.set(it.id, it));
+  return Array.from(base.values());
+}
 
 const errorListeners = new Set();
 
@@ -152,40 +174,35 @@ const storage = {
 
   async getPublicItineraries() {
     try {
-      const res = await fetch(PUBLIC_FN_URL);
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (e) {
-      return null;
+      const local = loadLocalPublic();
+      const itineraries = mergePublic(local);
+      return { itineraries };
+    } catch {
+      return { itineraries: BUNDLED_ITINERARIES };
     }
   },
 
   async savePublicItinerary(id, data) {
     try {
-      const res = await authedFetch(PUBLIC_FN_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, data }),
-      });
-      if (!res) { notifyError(401, "savePublic"); return null; }
-      if (!res.ok) { notifyError(res.status, "savePublic"); return null; }
-      return await res.json();
-    } catch (e) {
-      notifyError(0, "savePublic");
+      const local = loadLocalPublic() || [];
+      const idx = local.findIndex((it) => it.id === id);
+      const entry = { id, ...data };
+      if (idx >= 0) local[idx] = entry;
+      else local.push(entry);
+      saveLocalPublic(local);
+      return { id, saved: true };
+    } catch {
       return null;
     }
   },
 
   async deletePublicItinerary(id) {
     try {
-      const res = await authedFetch(`${PUBLIC_FN_URL}?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      if (!res) { notifyError(401, "deletePublic"); return null; }
-      if (!res.ok) { notifyError(res.status, "deletePublic"); return null; }
-      return await res.json();
-    } catch (e) {
-      notifyError(0, "deletePublic");
+      const local = loadLocalPublic() || [];
+      const filtered = local.filter((it) => it.id !== id);
+      saveLocalPublic(filtered);
+      return { id, deleted: true };
+    } catch {
       return null;
     }
   },
