@@ -14,7 +14,7 @@ for (const file of files) {
   const statements = raw.split(";").map((s) => s.trim()).filter(Boolean);
   console.log(`Running ${file} (${statements.length} statements) ...`);
   for (const stmt of statements) {
-    await sql(stmt + ";");
+    await sql.query(stmt + ";");
   }
   console.log(`Done.`);
 }
