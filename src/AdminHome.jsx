@@ -123,7 +123,7 @@ function AdminImportModal({ onClose, onSave, editItem }) {
             )}
             <textarea
               className="admin-field"
-              style={{ width: "100%", minHeight: 100, padding: 10, borderRadius: 10, border: "1px solid var(--glass-border)", fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical" }}
+              style={{ display: "none", width: "100%", minHeight: 100, padding: 10, borderRadius: 10, border: "1px solid var(--glass-border)", fontFamily: "var(--font-mono)", fontSize: 12, resize: "vertical" }}
               value={jsonInput}
               onChange={(e) => handleParseJson(e.target.value)}
               placeholder='{"tripTitle": "...", "days": {...}, "extras": [...]}'
@@ -196,13 +196,12 @@ function AdminImportModal({ onClose, onSave, editItem }) {
               </div>
             </div>
           )}
+        </div>
 
-          <div className="admin-modal-actions">
-            <button className="admin-cancel-btn" onClick={onClose}>Annulla</button>
-            <button className="admin-publish-btn" onClick={handleSave} disabled={!parsed || !title.trim() || saving}>
-              {saving ? <><AirplaneLoader size={16} /> Salvataggio...</> : editItem ? "Salva modifiche" : "Pubblica"}
-            </button>
-          </div>
+        <div className="admin-modal-actions">
+          <button className={`admin-publish-btn${saving ? " admin-publish-btn--saving" : ""}`} onClick={handleSave} disabled={!parsed || !title.trim() || saving}>
+              {saving ? <AirplaneLoader size={56} /> : editItem ? "Salva modifiche" : "Pubblica"}
+          </button>
         </div>
       </div>
     </div>

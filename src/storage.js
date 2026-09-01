@@ -19,30 +19,6 @@ import netlifyIdentity from "netlify-identity-widget";
 const FN_URL = "/.netlify/functions/storage";
 const PUBLIC_FN_URL = "/.netlify/functions/public-itineraries";
 
-const bundledModules = import.meta.glob("./data/itineraries/*.json", { eager: true });
-const BUNDLED_ITINERARIES = Object.values(bundledModules).map((m) => m.default);
-
-const DELETED_PUBLIC_KEY = "public_itineraries_deleted";
-
-function loadDeletedPublic() {
-  try {
-    const raw = localStorage.getItem(DELETED_PUBLIC_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
-function saveDeletedPublic(list) {
-  localStorage.setItem(DELETED_PUBLIC_KEY, JSON.stringify(list));
-}
-
-function mergePublic(serverList) {
-  const deleted = loadDeletedPublic();
-  const base = new Map(BUNDLED_ITINERARIES.map((it) => [it.id, it]));
-  if (serverList) serverList.forEach((it) => base.set(it.id, it));
-  return Array.from(base.values()).filter((it) => !deleted.includes(it.id));
-}
-
 const errorListeners = new Set();
 
 // Registra un callback chiamato ad ogni errore di storage: { status, context }.
@@ -179,8 +155,7 @@ const storage = {
     if (!res) throw new Error("Sessione scaduta. Accedi di nuovo.");
     if (!res.ok) throw new Error(`Errore del server (${res.status})`);
     const json = await res.json();
-    const serverList = json.itineraries || [];
-    return { itineraries: mergePublic(serverList) };
+    return { itineraries: json.itineraries || [] };
   },
 
   async savePublicItinerary(id, data) {
@@ -195,20 +170,11 @@ const storage = {
   },
 
   async deletePublicItinerary(id) {
-    const isBundled = BUNDLED_ITINERARIES.some((it) => it.id === id);
-    if (isBundled) {
-      const deleted = loadDeletedPublic();
-      if (!deleted.includes(id)) {
-        deleted.push(id);
-        saveDeletedPublic(deleted);
-      }
-    } else {
-      const res = await authedFetch(`${PUBLIC_FN_URL}?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      if (!res) throw new Error("Sessione scaduta. Accedi di nuovo.");
-      if (!res.ok) throw new Error(`Errore nella cancellazione (${res.status})`);
-    }
+    const res = await authedFetch(`${PUBLIC_FN_URL}?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (!res) throw new Error("Sessione scaduta. Accedi di nuovo.");
+    if (!res.ok) throw new Error(`Errore nella cancellazione (${res.status})`);
     return { id, deleted: true };
   },
 };
