@@ -458,10 +458,11 @@ const SHARED_STYLES = `
   .loading-wrap .empty-hint { padding: 0; }
   .airplane-loader {
     width: 96px; height: 96px;
-    animation: spin .8s linear infinite;
+    animation: spin 1.2s linear infinite;
     border-radius: 50%;
+    transform-origin: center center;
   }
-  @keyframes spin { to { transform: rotate(-360deg); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .ai-generating-overlay {
     position: fixed; inset: 0; z-index: 9999;
@@ -594,6 +595,7 @@ const SHARED_STYLES = `
   .admin-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; background: var(--teal); color: #fff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: var(--font-mono); }
   .admin-import-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; border: 1px solid var(--glass-border); border-radius: 16px; background: rgba(255,255,255,0.4); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); color: var(--muted); font-size: 16px; cursor: pointer; transition: all .2s; font-family: Arial; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(15,30,45,0.08); }
   .admin-import-btn:hover { background: rgba(255,255,255,0.55); box-shadow: 0 6px 24px rgba(15,30,45,0.12); transform: translateY(-1px); }
+  .admin-import-btn:active { transform: scale(0.97); box-shadow: 0 2px 8px rgba(15,30,45,0.1); }
   .admin-card-actions { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
   .admin-card-actions button { width: 32px; height: 32px; border: none; border-radius: 8px; background: rgba(0,0,0,0.04); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   .admin-card-actions button:hover { background: rgba(0,0,0,0.08); color: var(--ink); }
@@ -619,7 +621,7 @@ const SHARED_STYLES = `
   .admin-days-preview { font-size: 12px; color: var(--muted); }
   .admin-modal-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.06); }
   .admin-cancel-btn { padding: 10px 20px; border: 1px solid var(--glass-border); border-radius: 10px; background: #fff; color: var(--ink); font-size: 13px; cursor: pointer; font-family: var(--font-text); }
-  .admin-publish-btn { padding: 10px 24px; border: none; border-radius: 10px; background: var(--teal); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-text); transition: filter .15s; }
+  .admin-publish-btn { padding: 10px 24px; border: none; border-radius: 10px; background: var(--teal); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font-text); transition: filter .15s; display: inline-flex; align-items: center; gap: 8px; }
   .admin-publish-btn:hover { filter: brightness(1.08); }
   .admin-publish-btn:disabled { opacity: .5; cursor: default; }
   .data-tool { border: none; background: none; padding: 6px; color: var(--muted); font-size: 11.5px; text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer; font-family: var(--font-text); }

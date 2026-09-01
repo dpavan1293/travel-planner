@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import storage from "./storage";
-import { Plus, X, Globe, Pencil, Trash2, ArrowLeftRight, Search } from "lucide-react";
+import { Plus, X, Globe, Pencil, Trash2, ArrowLeftRight, Search, RefreshCw } from "lucide-react";
 import { AirplaneLoader } from "./App";
 const CONTINENTS = ["Europa", "Asia", "Africa", "Americhe", "Oceania"];
 
@@ -200,7 +200,7 @@ function AdminImportModal({ onClose, onSave, editItem }) {
           <div className="admin-modal-actions">
             <button className="admin-cancel-btn" onClick={onClose}>Annulla</button>
             <button className="admin-publish-btn" onClick={handleSave} disabled={!parsed || !title.trim() || saving}>
-              {saving ? "Salvataggio..." : editItem ? "Salva modifiche" : "Pubblica"}
+              {saving ? <><AirplaneLoader size={16} /> Salvataggio...</> : editItem ? "Salva modifiche" : "Pubblica"}
             </button>
           </div>
         </div>
@@ -212,6 +212,7 @@ function AdminImportModal({ onClose, onSave, editItem }) {
 export default function AdminHome({ user, onSwitchToClient }) {
   const [itineraries, setItineraries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [search, setSearch] = useState("");
@@ -219,9 +220,15 @@ export default function AdminHome({ user, onSwitchToClient }) {
 
   const load = async () => {
     setLoading(true);
-    const res = await storage.getPublicItineraries();
-    setItineraries(res?.itineraries || []);
-    setLoading(false);
+    setError(null);
+    try {
+      const res = await storage.getPublicItineraries();
+      setItineraries(res?.itineraries || []);
+    } catch (e) {
+      setError(e.message || "Impossibile caricare gli itinerari");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -305,6 +312,13 @@ export default function AdminHome({ user, onSwitchToClient }) {
         <div className="loading-wrap">
           <AirplaneLoader />
           <p className="empty-hint">Caricamento...</p>
+        </div>
+      ) : error ? (
+        <div className="explore-empty">
+          <p style={{ color: "var(--coral)", margin: "0 0 12px" }}>{error}</p>
+          <button className="admin-import-btn" onClick={load} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <RefreshCw size={16} /> Riprova
+          </button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="explore-empty">

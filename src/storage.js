@@ -17,28 +17,30 @@
 import netlifyIdentity from "netlify-identity-widget";
 
 const FN_URL = "/.netlify/functions/storage";
+const PUBLIC_FN_URL = "/.netlify/functions/public-itineraries";
 
 const bundledModules = import.meta.glob("./data/itineraries/*.json", { eager: true });
 const BUNDLED_ITINERARIES = Object.values(bundledModules).map((m) => m.default);
 
-const PUBLIC_STORAGE_KEY = "public_itineraries";
+const DELETED_PUBLIC_KEY = "public_itineraries_deleted";
 
-function loadLocalPublic() {
+function loadDeletedPublic() {
   try {
-    const raw = localStorage.getItem(PUBLIC_STORAGE_KEY);
+    const raw = localStorage.getItem(DELETED_PUBLIC_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return null;
+  return [];
 }
 
-function saveLocalPublic(list) {
-  localStorage.setItem(PUBLIC_STORAGE_KEY, JSON.stringify(list));
+function saveDeletedPublic(list) {
+  localStorage.setItem(DELETED_PUBLIC_KEY, JSON.stringify(list));
 }
 
-function mergePublic(local) {
+function mergePublic(serverList) {
+  const deleted = loadDeletedPublic();
   const base = new Map(BUNDLED_ITINERARIES.map((it) => [it.id, it]));
-  if (local) local.forEach((it) => base.set(it.id, it));
-  return Array.from(base.values());
+  if (serverList) serverList.forEach((it) => base.set(it.id, it));
+  return Array.from(base.values()).filter((it) => !deleted.includes(it.id));
 }
 
 const errorListeners = new Set();
@@ -173,38 +175,41 @@ const storage = {
   },
 
   async getPublicItineraries() {
-    try {
-      const local = loadLocalPublic();
-      const itineraries = mergePublic(local);
-      return { itineraries };
-    } catch {
-      return { itineraries: BUNDLED_ITINERARIES };
-    }
+    const res = await authedFetch(PUBLIC_FN_URL);
+    if (!res) throw new Error("Sessione scaduta. Accedi di nuovo.");
+    if (!res.ok) throw new Error(`Errore del server (${res.status})`);
+    const json = await res.json();
+    const serverList = json.itineraries || [];
+    return { itineraries: mergePublic(serverList) };
   },
 
   async savePublicItinerary(id, data) {
-    try {
-      const local = loadLocalPublic() || [];
-      const idx = local.findIndex((it) => it.id === id);
-      const entry = { id, ...data };
-      if (idx >= 0) local[idx] = entry;
-      else local.push(entry);
-      saveLocalPublic(local);
-      return { id, saved: true };
-    } catch {
-      return null;
-    }
+    const res = await authedFetch(PUBLIC_FN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, data }),
+    });
+    if (!res) throw new Error("Sessione scaduta. Accedi di nuovo.");
+    if (!res.ok) throw new Error(`Errore nel salvataggio (${res.status})`);
+    return await res.json();
   },
 
   async deletePublicItinerary(id) {
-    try {
-      const local = loadLocalPublic() || [];
-      const filtered = local.filter((it) => it.id !== id);
-      saveLocalPublic(filtered);
-      return { id, deleted: true };
-    } catch {
-      return null;
+    const isBundled = BUNDLED_ITINERARIES.some((it) => it.id === id);
+    if (isBundled) {
+      const deleted = loadDeletedPublic();
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+        saveDeletedPublic(deleted);
+      }
+    } else {
+      const res = await authedFetch(`${PUBLIC_FN_URL}?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res) throw new Error("Sessione scaduta. Accedi di nuovo.");
+      if (!res.ok) throw new Error(`Errore nella cancellazione (${res.status})`);
     }
+    return { id, deleted: true };
   },
 };
 
