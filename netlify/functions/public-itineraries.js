@@ -26,10 +26,29 @@ export async function handler(event, context) {
   try {
     switch (event.httpMethod) {
       case "GET": {
-        const rows = await sql`SELECT id, data FROM public_itineraries ORDER BY created_at DESC`;
-        return json(200, {
-          itineraries: rows.map((r) => ({ id: r.id, ...JSON.parse(r.data) })),
-        });
+        let rows;
+        try {
+          rows = await sql`SELECT id, data::text as data FROM public_itineraries ORDER BY updated_at DESC`;
+        } catch (e) {
+          return json(500, { error: "SQL error: " + e.message });
+        }
+        const itineraries = [];
+        for (const r of rows) {
+          try {
+            let data;
+            if (typeof r.data === "string") {
+              data = JSON.parse(r.data);
+            } else if (typeof r.data === "object" && r.data !== null) {
+              data = r.data;
+            } else {
+              data = {};
+            }
+            itineraries.push({ id: r.id, ...data });
+          } catch (e) {
+            itineraries.push({ id: r.id, _error: e.message, _dataType: typeof r.data, _raw: String(r.data).slice(0, 200) });
+          }
+        }
+        return json(200, { itineraries });
       }
 
       case "POST": {
