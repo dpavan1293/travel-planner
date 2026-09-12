@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import storage from "./storage";
-import { Plus, X, Globe, Pencil, Trash2, ArrowLeftRight, Search, RefreshCw } from "lucide-react";
-import { AirplaneLoader } from "./App";
+import { Plus, X, Globe, Pencil, Trash2, ArrowLeftRight, Search, RefreshCw, ImageIcon } from "lucide-react";
+import { AirplaneLoader, UnsplashPicker } from "./App";
 const CONTINENTS = ["Europa", "Asia", "Africa", "Americhe", "Oceania"];
 
 function AdminImportModal({ onClose, onSave, editItem }) {
@@ -18,6 +18,7 @@ function AdminImportModal({ onClose, onSave, editItem }) {
   const [sourceUrl, setSourceUrl] = useState(editItem?.sourceUrl || "");
   const [saving, setSaving] = useState(false);
   const [coverLoading, setCoverLoading] = useState(false);
+  const [showUnsplashPicker, setShowUnsplashPicker] = useState(false);
   const fileRef = useRef(null);
   const hasAutoPopulated = useRef(false);
 
@@ -137,8 +138,32 @@ function AdminImportModal({ onClose, onSave, editItem }) {
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Roma in 5 giorni" />
             </div>
             <div className="admin-field">
-              <label>URL Copertina {coverLoading && <span style={{ fontSize: 11, color: "var(--muted)" }}>— cerco su Unsplash...</span>}</label>
-              <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." />
+              <label>Copertina {coverLoading && <span style={{ fontSize: 11, color: "var(--muted)" }}>— cerco su Unsplash...</span>}</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {coverUrl && (
+                  <img
+                    src={coverUrl}
+                    alt="Anteprima copertina"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    style={{ width: 56, height: 42, borderRadius: 8, objectFit: "cover", border: "1px solid var(--glass-border)", flexShrink: 0 }}
+                  />
+                )}
+                <input
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  placeholder="https://..."
+                  style={{ flex: 1 }}
+                />
+                <button
+                  className="icon-btn"
+                  type="button"
+                  onClick={() => setShowUnsplashPicker(true)}
+                  title="Cerca foto su Unsplash"
+                  aria-label="Cerca foto su Unsplash"
+                >
+                  <ImageIcon size={16} />
+                </button>
+              </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div className="admin-field">
@@ -204,11 +229,18 @@ function AdminImportModal({ onClose, onSave, editItem }) {
           </button>
         </div>
       </div>
+
+      <UnsplashPicker
+        open={showUnsplashPicker}
+        query={title || country}
+        onClose={() => setShowUnsplashPicker(false)}
+        onSelect={(url) => setCoverUrl(url)}
+      />
     </div>
   );
 }
 
-export default function AdminHome({ user, onSwitchToClient }) {
+export default function AdminHome({ user, onSwitchToClient, onEditPlanner }) {
   const [itineraries, setItineraries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -246,8 +278,12 @@ export default function AdminHome({ user, onSwitchToClient }) {
   };
 
   const handleEdit = (item) => {
-    setEditItem(item);
-    setShowModal(true);
+    if (onEditPlanner) {
+      onEditPlanner(item);
+    } else {
+      setEditItem(item);
+      setShowModal(true);
+    }
   };
 
   const handleNew = () => {
@@ -255,8 +291,10 @@ export default function AdminHome({ user, onSwitchToClient }) {
     setShowModal(true);
   };
 
+  const americasVariants = ["Americhe", "Nord America", "Sud America"];
   const filtered = itineraries.filter((it) => {
-    const matchContinent = continent === "Tutti" || it.continent === continent;
+    const matchContinent = continent === "Tutti"
+      || (continent === "Americhe" ? americasVariants.includes(it.continent) : it.continent === continent);
     if (!matchContinent) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();

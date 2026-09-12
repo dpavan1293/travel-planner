@@ -1,8 +1,11 @@
-import { StrictMode, useState, useEffect } from "react";
+import { StrictMode, useState, useEffect, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import netlifyIdentity from "netlify-identity-widget";
 import "./index.css";
 import App from "./App.jsx";
+
+// Lazy-load the dev export preview (only used on /dev-export path)
+const DevExportPreview = lazy(() => import("./lib/DevExportPreview.jsx"));
 
 const isLocalDev =
   window.location.hostname === "localhost" ||
@@ -34,6 +37,15 @@ const localDevUser = {
 };
 
 function Root() {
+  // Dev export preview: renders export template locally with dummy data (no DB needed)
+  if (window.location.pathname === "/dev-export") {
+    return (
+      <Suspense fallback={<p style={{ padding: 40, fontFamily: "sans-serif" }}>Loading export preview...</p>}>
+        <DevExportPreview />
+      </Suspense>
+    );
+  }
+
   const [user, setUser] = useState(
     isLocalDev ? localDevUser : netlifyIdentity.currentUser()
   );

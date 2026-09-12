@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --cream:#F5F0E3;
+    --cream-deep:#EDE5D2;
+    --paper:#FBF8F1;
+    --ink:#26221A;
+    --ink-soft:#665D4C;
+    --ink-faint:#9C9280;
+    --line:#D8CDB2;
+    --lagoon:#2E6E67;
+    --lagoon-deep:#1C433F;
+    --lagoon-pale:#D9E7E3;
+    --gold:#B08349;
+    --radius:2px;
+    --measure:62ch;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-weight:300;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .serif{font-family:'Fraunces', serif;}
+
+  .wrap{
+    max-width:960px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+
+  .label{
+    font-family:'Jost', sans-serif;
+    font-size:12px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--lagoon-deep);
+    font-weight:500;
+  }
+
+  .label::before{
+    content:'';
+    display:inline-block;
+    width:22px;
+    height:1px;
+    background:var(--gold);
+    margin-right:10px;
+    vertical-align:middle;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:88vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    background:
+      radial-gradient(120% 90% at 15% -10%, #3C8079 0%, transparent 55%),
+      linear-gradient(160deg, var(--lagoon-deep) 0%, var(--lagoon) 60%, #3E827A 100%);
+    color:#F4EFE1;
+    overflow:hidden;
+    padding-bottom:0;
+  }
+  .hero.has-cover{
+    background:
+      linear-gradient(180deg, rgba(28,67,63,.2) 0%, rgba(28,67,63,.85) 100%),
+      var(--hero-cover-url) center/cover no-repeat;
+  }
+
+  .hero-nav{
+    position:relative;
+    z-index:2;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:28px 32px 0;
+    font-size:12px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:#DCE9E4;
+  }
+
+  .hero-body{
+    position:relative;
+    z-index:2;
+    max-width:960px;
+    margin:0 auto;
+    width:100%;
+    padding:120px 32px 64px;
+    text-align:center;
+  }
+
+  .hero-eyebrow{
+    font-size:13px;
+    letter-spacing:.3em;
+    text-transform:uppercase;
+    color:#C9E2DB;
+    margin-bottom:22px;
+  }
+
+  .hero-title{
+    font-size:clamp(48px, 9vw, 104px);
+    line-height:.98;
+    font-weight:400;
+    letter-spacing:.01em;
+    margin:0;
+  }
+
+  .hero-sub{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:clamp(18px, 2.6vw, 26px);
+    color:#DCEAE5;
+    margin:18px 0 0;
+  }
+
+  .hero-dates{
+    margin-top:34px;
+    font-size:13px;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:#BFDAD3;
+  }
+
+  .hero-meta{
+    margin-top:46px;
+    display:flex;
+    justify-content:center;
+    gap:0;
+    flex-wrap:wrap;
+    border-top:1px solid rgba(244,239,225,.25);
+    padding-top:26px;
+  }
+
+  .hero-meta div{
+    padding:0 26px;
+    border-right:1px solid rgba(244,239,225,.25);
+    text-align:left;
+  }
+  .hero-meta div:last-child{border-right:none;}
+
+  .hero-meta .mval{
+    font-family:'Fraunces', serif;
+    font-size:22px;
+    font-weight:400;
+  }
+  .hero-meta .mkey{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:#B7D4CC;
+    margin-top:2px;
+  }
+
+  .wave{
+    position:relative;
+    z-index:2;
+    display:block;
+    width:100%;
+    height:90px;
+    margin-top:40px;
+  }
+
+  /* ---------- SECTIONS ---------- */
+  section{padding:96px 0;}
+  section + section{border-top:1px solid var(--line);}
+
+  .section-head{margin-bottom:44px;}
+  .section-title{
+    font-family:'Fraunces', serif;
+    font-weight:400;
+    font-size:clamp(30px, 4vw, 42px);
+    margin:14px 0 0;
+  }
+
+  .lede{
+    max-width:var(--measure);
+    font-size:17px;
+    line-height:1.75;
+    color:var(--ink-soft);
+    font-weight:300;
+    text-align: center;
+  }
+
+  /* facts grid */
+  .facts{
+    margin-top:48px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    border-top:1px solid var(--line);
+    border-left:1px solid var(--line);
+  }
+  .fact{
+    padding:22px 24px;
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+  }
+  .fact .fkey{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .fact .fval{
+    font-family:'Fraunces', serif;
+    font-size:19px;
+    margin-top:8px;
+    text-transform:capitalize;
+  }
+  .transport-line{
+    margin-top:24px;
+    font-size:14px;
+    color:var(--ink-soft);
+    line-height:1.7;
+    max-width:var(--measure);
+  }
+  .transport-line b{color:var(--ink);font-weight:500;}
+
+
+  .daychip{
+    flex:0 0 auto;
+    width:132px;
+    padding:0 18px 0 0;
+    position:relative;
+  }
+  .daychip::after{
+    content:'';
+    position:absolute;
+    top:9px; left:0; right:18px;
+    height:1px;
+    background:var(--line);
+  }
+  .daychip:last-child::after{display:none;}
+  .daychip .dn{
+    width:19px;height:19px;
+    border:1px solid var(--lagoon);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:9px;color:var(--lagoon-deep);
+    background:var(--cream);
+    position:relative;z-index:1;
+    font-weight:500;
+  }
+  .daychip .dp{
+    margin-top:14px;
+    font-size:12.5px;
+    line-height:1.4;
+    color:var(--ink-soft);
+    padding-right:14px;
+  }
+
+  /* ---------- ITINERARY ---------- */
+  .day-row{
+    display:grid;
+    grid-template-columns:120px 1fr;
+    gap:36px;
+    padding:44px 0;
+    position:relative;
+  }
+  .day-row + .day-row{border-top:1px solid var(--line);}
+
+  .day-rail{position:relative;}
+  .day-num{
+    font-family:'Fraunces', serif;
+    font-size:46px;
+    font-weight:400;
+    color:var(--lagoon-deep);
+    line-height:1;
+  }
+  .day-date{
+    margin-top:10px;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+
+  .day-place{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:24px;
+    font-weight:400;
+    margin:0 0 6px;
+  }
+
+  .day-tags{
+    display:flex;flex-wrap:wrap;gap:8px;
+    margin-bottom:20px;
+  }
+  .tag{
+    font-size:10.5px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--lagoon-deep);
+    border:1px solid var(--lagoon);
+    padding:4px 10px;
+    border-radius:20px;
+    background:var(--lagoon-pale);
+  }
+
+  .day-activities{list-style:none;margin:0;padding:0;}
+  .day-activities li{
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    padding:9px 0;
+    font-size:15px;
+    line-height:1.55;
+    color:var(--ink);
+    border-top:1px solid var(--cream-deep);
+  }
+  .day-activities li:first-child{border-top:none;}
+  .day-activities .icon{
+    flex:0 0 auto;
+    width:16px;height:16px;
+    margin-top:3px;
+    color:var(--lagoon);
+  }
+  .day-activities .icon svg{width:100%;height:100%;display:block;}
+
+  .day-stay{
+    margin-top:20px;
+    padding-top:16px;
+    border-top:1px dashed var(--line);
+    font-size:12.5px;
+    letter-spacing:.06em;
+    color:var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .day-stay .icon{width:14px;height:14px;color:var(--gold);}
+  .day-stay .icon svg{width:100%;height:100%;}
+
+  @media (max-width:640px){
+    .day-row{grid-template-columns:1fr;gap:14px;}
+    .day-rail{display:flex;align-items:baseline;gap:12px;}
+  }
+
+  /* ---------- EXTRAS ---------- */
+  .extras-grid{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:64px;
+  }
+  @media (max-width:760px){ .extras-grid{grid-template-columns:1fr;} }
+
+  .extra-block + .extra-block{margin-top:56px;}
+  .extra-title{
+    font-family:'Fraunces', serif;
+    font-size:20px;
+    margin:0 0 20px;
+  }
+
+  table.costs{width:100%;border-collapse:collapse;}
+  table.costs tr{border-top:1px solid var(--line);}
+  table.costs tr:first-child{border-top:none;}
+  table.costs td{padding:13px 0;font-size:14px;vertical-align:top;}
+  table.costs td.desc{color:var(--ink);padding-right:18px;}
+  table.costs td.val{
+    color:var(--lagoon-deep);
+    text-align:right;
+    white-space:nowrap;
+    font-family:'Fraunces', serif;
+    font-size:15px;
+  }
+
+  ul.checklist{list-style:none;margin:0;padding:0;}
+  ul.checklist li{
+    display:flex;gap:12px;align-items:flex-start;
+    font-size:14px;line-height:1.6;color:var(--ink-soft);
+    padding:10px 0;border-top:1px solid var(--cream-deep);
+  }
+  ul.checklist li:first-child{border-top:none;}
+  ul.checklist .box{
+    flex:0 0 auto;width:13px;height:13px;margin-top:3px;
+    border:1px solid var(--gold);border-radius:3px;
+  }
+
+  .tips-box{
+    margin-top:56px;
+    padding:28px 30px;
+    background:var(--paper);
+    border-left:2px solid var(--lagoon);
+    font-size:13.5px;
+    line-height:1.75;
+    color:var(--ink-soft);
+  }
+  .tips-box b{color:var(--ink);font-weight:500;}
+
+  /* ---------- ROUTE ---------- */
+  .route-line{
+    margin-top:70px;
+    position:relative;
+    padding-top:0;
+  }
+  .route-track{
+    position:relative;
+    display:flex;
+    align-items:flex-start;
+    overflow-x:auto;
+    padding:10px 0 30px;
+  }
+  .route-track::before{
+    content:'';
+    position:absolute;
+    top:5px; left:0; right:0;
+    height:1px;
+    background:repeating-linear-gradient(to right, var(--gold) 0 6px, transparent 6px 11px);
+  }
+  .stop{
+    flex:0 0 auto;
+    width:150px;
+    text-align:center;
+    padding-top:16px;
+    position:relative;
+  }
+  .stop .pt{
+    position:absolute;top:0;left:50%;
+    transform:translateX(-50%);
+    width:11px;height:11px;border-radius:50%;
+    background:var(--lagoon-deep);
+    border:2px solid var(--cream);
+    outline:1px solid var(--lagoon-deep);
+  }
+  .stop .sname{
+    margin-top:14px;
+    font-size:12.5px;
+    line-height:1.4;
+    color:var(--ink);
+    padding:0 8px;
+  }
+  .stop .sidx{
+    font-size:10px;letter-spacing:.14em;color:var(--ink-faint);
+    text-transform:uppercase;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:56px 0 70px;
+    text-align:center;
+  }
+  footer .fmark{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:20px;
+    margin-bottom:10px;
+  }
+  footer .fsrc{
+    font-size:12px;
+    color:var(--ink-faint);
+  }
+  footer .fsrc a{color:var(--lagoon-deep);}
+
+  @media (max-width:640px){
+    .wrap{padding:0 20px;}
+    .facts{grid-template-columns:repeat(2,1fr);}
+    .hero-meta{gap:0;}
+    .hero-meta div{padding:0 16px;}
+  }
+
+  @media print {
+    body { background: #fff; }
+    .hero { min-height: auto; padding: 40px 0 0; }
+    section { padding: 48px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero{{COVER_CLASS}}">
+  <nav class="hero-nav">
+    <span>Itinerario di viaggio</span>
+    <span>{{HERO_NAV_RIGHT}}</span>
+  </nav>
+  <div class="hero-body">
+    <div class="hero-eyebrow">{{HERO_EYEBROW}}</div>
+    <h1 class="hero-title serif">{{TITLE}}</h1>
+    <p class="hero-sub">{{HERO_SUB}}</p>
+    <div class="hero-dates">{{COVER_SUB}}</div>
+  </div>
+  <svg class="wave" viewBox="0 0 1200 90" preserveAspectRatio="none">
+    <path d="M0,40 C150,90 350,0 600,40 C850,80 1050,10 1200,40 L1200,90 L0,90 Z" fill="#F5F0E3"></path>
+  </svg>
+</header>
+
+<section id="overview">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 class="section-title serif">{{OVERVIEW_TITLE}}</h2>
+    </div>
+    <p class="lede" id="ov-desc">{{OVERVIEW_DESC}}</p>
+
+    <div class="facts">{{OVERVIEW_FACTS}}</div>
+    <p class="transport-line">{{OVERVIEW_TRANSPORT}}</p>
+
+  </div>
+</section>
+
+<section id="itinerary">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="label">Giorno per giorno</div>
+      <h2 class="section-title serif">Il programma</h2>
+    </div>
+    <div>{{DAYS}}</div>
+  </div>
+</section>
+
+<section id="extras">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="label">Da sapere</div>
+      <h2 class="section-title serif">Costi, note &amp; bagaglio</h2>
+    </div>
+    <div class="extras-grid">{{EXTRAS}}</div>
+    <div class="tips-box"{{TIPS_STYLE}}>{{TIPS}}</div>
+  </div>
+</section>
+
+<section id="map">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="label">Itinerario sulla mappa</div>
+      <h2 class="section-title serif">Rotta del viaggio</h2>
+    </div>
+    <p class="lede">Schema indicativo delle tappe, in ordine di visita.</p>
+    <div class="route-line">
+      <div class="route-track">{{ROUTE}}</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fmark serif">{{TITLE}}</div>
+  <div class="fsrc">{{FOOTER_SRC}}</div>
+</footer>
+
+</body>
+</html>

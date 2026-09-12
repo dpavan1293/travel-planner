@@ -19,6 +19,7 @@ import {
   fromISO,
 } from "./lib/exportTemplate";
 import { routePointsFromList, buildTravelMapSvg } from "./lib/travelMap";
+import { TEMPLATES } from "./lib/exportTemplateHtml";
 import AdminHome from "./AdminHome";
 import loaderImg from "./assets/airplane.svg";
 
@@ -558,10 +559,10 @@ const SHARED_STYLES = `
   .explore-card-meta span { display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
 
   .explore-detail-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(15,26,33,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s; }
-  .explore-detail { position: relative; background: #fff; border-radius: 22px; width: 100%; max-width: 600px; max-height: 100%; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp .25s cubic-bezier(0.16,1,0.3,1); }
+  .explore-detail { position: relative; background: #fff; border-radius: 22px; width: 100%; max-width: 600px; max-height: 100%; display: flex; flex-direction: column; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: slideUp .25s cubic-bezier(0.16,1,0.3,1); }
   .explore-detail::-webkit-scrollbar { display: none; }
   .explore-detail-cover { width: 100%; height: 220px; object-fit: cover; border-radius: 22px 22px 0 0; flex-shrink: 0; }
-  .explore-detail-body { padding: 24px; flex: 1; overflow-y: auto; scrollbar-width: none; }
+  .explore-detail-body { padding: 24px; flex: 1; scrollbar-width: none; }
   .explore-detail-body::-webkit-scrollbar { display: none; }
   .explore-detail-close { position: absolute; top: 12px; right: 12px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; color: var(--ink); cursor: pointer; transition: box-shadow .15s; }
   .explore-detail-close:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
@@ -1013,8 +1014,10 @@ function ExploreView({ onImport, user }) {
     });
   }, []);
 
+  const americasVariants = ["Americhe", "Nord America", "Sud America"];
   const filtered = all.filter((it) => {
-    const matchContinent = continent === "Tutti" || it.continent === continent;
+    const matchContinent = continent === "Tutti"
+      || (continent === "Americhe" ? americasVariants.includes(it.continent) : it.continent === continent);
     if (!matchContinent) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
@@ -1134,6 +1137,11 @@ function ExploreView({ onImport, user }) {
               <p className="explore-detail-country">{selected.country} — {selected.continent}</p>
               <h2 className="explore-detail-title">{selected.title}</h2>
               <p className="explore-detail-desc">{selected.description}</p>
+              {selected.sourceUrl && (
+                <p className="explore-detail-desc" style={{ margin: "0 0 16px", fontSize: 12.5 }}>
+                  Fonte: <a href={selected.sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-dark)" }}>{selected.sourceUrl.replace(/^https?:\/\//, "")}</a>
+                </p>
+              )}
 
               <div className="explore-detail-grid">
                 <div className="explore-detail-info">
@@ -1189,6 +1197,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const [storageError, setStorageError] = useState(null);
   const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || import.meta.env.VITE_DEBUG_ADMIN === "1");
   const [adminMode, setAdminMode] = useState(() => window.location.pathname === "/admin");
+  const [editingPublicTrip, setEditingPublicTrip] = useState(null);
 
   const switchToAdmin = () => {
     window.history.pushState({}, "", "/admin");
@@ -1198,6 +1207,11 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
   const switchToClient = () => {
     window.history.pushState({}, "", "/");
     setAdminMode(false);
+  };
+
+  const editPublicItinerary = (item) => {
+    setEditingPublicTrip(item);
+    setView("planner");
   };
 
   useEffect(() => {
@@ -1418,7 +1432,7 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
               </div>
             )}
             {view === "launcher" && isAdmin && adminMode && (
-              <AdminHome user={user} onSwitchToClient={switchToClient} />
+              <AdminHome user={user} onSwitchToClient={switchToClient} onEditPlanner={editPublicItinerary} />
             )}
             {view === "launcher" && isAdmin && !adminMode && (
               <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} onNavigateToPlanner={(id) => { setCurrentTripId(id); setView("planner"); }} onSwitchToAdmin={switchToAdmin} />
@@ -1426,7 +1440,18 @@ export default function TravelPlanner({ user, onLogout, pendingShareToken }) {
             {view === "launcher" && !isAdmin && (
               <TripLauncher trips={trips} onCreate={createTrip} onOpen={openTrip} onDelete={deleteTrip} onDuplicate={duplicateTrip} onArchive={setArchived} onImport={importTrips} user={user} onLogout={onLogout} onNavigateToPlanner={(id) => { setCurrentTripId(id); setView("planner"); }} />
             )}
-        {view === "planner" && currentTripId && (
+        {view === "planner" && editingPublicTrip && (
+          <PlannerView
+            key={`public-${editingPublicTrip.id}`}
+            publicTripId={editingPublicTrip.id}
+            publicTripData={editingPublicTrip}
+            isPublicAdmin={true}
+            onBack={() => { setEditingPublicTrip(null); setView("launcher"); }}
+            onTitleChange={() => {}}
+            onCoverChange={() => {}}
+          />
+        )}
+        {view === "planner" && currentTripId && !editingPublicTrip && (
           <PlannerView
             key={currentTripId}
             tripId={currentTripId}
@@ -2218,7 +2243,7 @@ function TripLauncher({ trips, onCreate, onOpen, onDelete, onDuplicate, onArchiv
   );
 }
 
-function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
+function PlannerView({ tripId, onBack, onTitleChange, onCoverChange, publicTripId, publicTripData, isPublicAdmin }) {
   const [tripTitle, setTripTitle] = useState("");
   const [days, setDays] = useState({});
   const [extras, setExtras] = useState([]);
@@ -2262,10 +2287,53 @@ function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
   const [showShiftForm, setShowShiftForm] = useState(false);
   const [shiftNewStart, setShiftNewStart] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("classic");
 
   const allCategories = CATEGORIES;
 
   useEffect(() => {
+    if (isPublicAdmin && publicTripData) {
+      const data = publicTripData;
+      if (data.title) setTripTitle(data.title);
+      if (data.coverUrl) { setCoverImageUrl(data.coverUrl); setShowCoverInput(true); }
+      if (data.days) {
+        const migrated = {};
+        Object.entries(data.days).forEach(([iso, d]) => {
+          migrated[iso] = {
+            place: d.place || "",
+            activities: d.activities && d.activities.length ? d.activities : [""],
+            accommodation: d.accommodation || "",
+            categories: d.categories || (d.category ? [d.category] : []),
+            image: d.image || "",
+          };
+        });
+        setDays(fillGaps(migrated));
+        const isoKeys = Object.keys(migrated).sort();
+        if (isoKeys.length) {
+          const earliest = isoKeys[0];
+          const latest = isoKeys[isoKeys.length - 1];
+          const startDate = fromISO(earliest);
+          setCurrentMonth(new Date(startDate.getFullYear(), startDate.getMonth(), 1));
+          setRangeStart(earliest);
+          setRangeEnd(latest);
+          setShowRangeForm(false);
+        } else {
+          setShowRangeForm(true);
+        }
+      } else {
+        setShowRangeForm(true);
+      }
+      if (data.extras) {
+        const migratedExtras = data.extras.map((e) =>
+          e.type === "flight" && (!e.flights || !e.flights.length) ? { ...e, flights: [emptyFlight()] } : e
+        );
+        setExtras(migratedExtras);
+      }
+      setLoaded(true);
+      return;
+    }
+
     (async () => {
       try {
         const res = await storage.get(`trip:${tripId}`);
@@ -2314,16 +2382,40 @@ function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
         setLoaded(true);
       }
     })();
-  }, [tripId]);
+  }, [tripId, isPublicAdmin, publicTripData]);
 
   useEffect(() => {
     if (!loaded) return;
-    const payload = JSON.stringify({ tripTitle, days, extras, coverImageUrl });
     const t = setTimeout(() => {
-      storage.set(`trip:${tripId}`, payload).catch(() => {});
+      if (isPublicAdmin && publicTripId) {
+        const data = {
+          title: tripTitle,
+          days,
+          extras,
+          coverUrl: coverImageUrl,
+          continent: publicTripData?.continent || "",
+          country: publicTripData?.country || "",
+          description: publicTripData?.description || "",
+          difficulty: publicTripData?.difficulty || "",
+          budget: publicTripData?.budget || "",
+          bestPeriod: publicTripData?.bestPeriod || "",
+          sourceUrl: publicTripData?.sourceUrl || "",
+          duration: Object.keys(days).length,
+        };
+        authHeaders({ "Content-Type": "application/json" }).then((headers) => {
+          fetch("/.netlify/functions/public-itineraries", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ id: publicTripId, data }),
+          }).catch(() => {});
+        });
+      } else {
+        const payload = JSON.stringify({ tripTitle, days, extras, coverImageUrl });
+        storage.set(`trip:${tripId}`, payload).catch(() => {});
+      }
     }, 400);
     return () => clearTimeout(t);
-  }, [tripTitle, days, extras, coverImageUrl, loaded, tripId]);
+  }, [tripTitle, days, extras, coverImageUrl, loaded, tripId, isPublicAdmin, publicTripId, publicTripData]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -2595,10 +2687,12 @@ function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
   const sortedDayEntries = Object.entries(days).sort(([a], [b]) => (a < b ? -1 : 1));
 
   const exportItinerary = () => {
-    // Apre l'itinerario come pagina web pubblica servita via HTTPS (/.netlify/functions/export),
-    // così le foto caricano anche su iPhone/Safari (il file .html scaricato apriva le immagini
-    // in contesto locale e Safari le bloccava).
-    window.open(`${window.location.origin}/export/${tripId}`, "_blank");
+    setShowTemplatePicker(true);
+  };
+
+  const doExport = (templateKey) => {
+    setShowTemplatePicker(false);
+    window.open(`${window.location.origin}/export/${tripId}?template=${templateKey}`, "_blank");
   };
 
   const [showSharePanel, setShowSharePanel] = useState(false);
@@ -2644,17 +2738,19 @@ function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
       )}
       <div className="tp-header">
         <div className="tp-header-top no-print">
-          <button className="back-link" onClick={onBack}><ArrowLeft size={14} /> I tuoi viaggi</button>
+          <button className="back-link" onClick={onBack}><ArrowLeft size={14} /> {isPublicAdmin ? "Admin" : "I tuoi viaggi"}</button>
           <div className="tp-header-actions">
-            <button
-              className="icon-btn"
-              onClick={() => { setShowSharePanel(true); if (shareStatus === "idle") generateShareLink(); }}
-              aria-label="Condividi viaggio"
-              title="Condividi"
-            >
-              <Share2 size={16} />
-            </button>
-            <button className="export-btn" onClick={exportItinerary} disabled={!loaded}>
+            {!isPublicAdmin && (
+              <button
+                className="icon-btn"
+                onClick={() => { setShowSharePanel(true); if (shareStatus === "idle") generateShareLink(); }}
+                aria-label="Condividi viaggio"
+                title="Condividi"
+              >
+                <Share2 size={16} />
+              </button>
+            )}
+            <button className="export-btn" onClick={exportItinerary} disabled={!loaded || isPublicAdmin}>
               <Printer size={14} /> Esporta itinerario
             </button>
           </div>
@@ -2673,6 +2769,39 @@ function PlannerView({ tripId, onBack, onTitleChange, onCoverChange }) {
             )}
             {shareStatus === "error" && <p className="field-label" style={{ color: "var(--coral)" }}>{shareError}</p>}
             <button className="cover-toggle-link" onClick={() => setShowSharePanel(false)}>Chiudi</button>
+          </div>
+        )}
+        {showTemplatePicker && (
+          <div className="share-panel no-print" style={{ gap: 16 }}>
+            <p className="field-label" style={{ marginBottom: 4 }}>Scegli il modello per l'export</p>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              {Object.entries(TEMPLATES).map(([key, tpl]) => (
+                <button
+                  key={key}
+                  className="export-btn"
+                  style={{
+                    flex: "1 1 140px",
+                    padding: "14px 16px",
+                    background: selectedTemplate === key ? "var(--lagoon)" : "var(--paper)",
+                    color: selectedTemplate === key ? "#fff" : "var(--ink)",
+                    border: `1px solid ${selectedTemplate === key ? "var(--lagoon)" : "var(--line)"}`,
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    fontWeight: 500,
+                    fontSize: 14,
+                  }}
+                  onClick={() => setSelectedTemplate(key)}
+                >
+                  {tpl.name}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button className="export-btn" onClick={() => doExport(selectedTemplate)}>
+                <Printer size={14} /> Esporta
+              </button>
+              <button className="cover-toggle-link" onClick={() => setShowTemplatePicker(false)}>Annulla</button>
+            </div>
           </div>
         )}
         <input
@@ -3564,7 +3693,7 @@ function MapCard({ extra, onChange }) {
 // oggi è collegato solo all'immagine di copertina del viaggio, ma può essere
 // riusato tale e quale per l'immagine di una singola giornata in futuro
 // (basta passargli query/onSelect diversi da dove serve).
-function UnsplashPicker({ open, query, onClose, onSelect }) {
+export function UnsplashPicker({ open, query, onClose, onSelect }) {
   const [searchQuery, setSearchQuery] = useState(query || "");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -143,6 +143,16 @@ function smoothPath(pts) {
   return d;
 }
 
+// Segmenti retti tra i punti (senza curve).
+function straightPath(pts) {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    d += ` L ${pts[i][0]} ${pts[i][1]}`;
+  }
+  return d;
+}
+
 // ---------- semplificazione Douglas-Peucker (in pixel) ----------
 function simplifyDP(pts, tolPx) {
   const n = pts.length;
@@ -494,11 +504,11 @@ export function buildTravelMapSvg(points, opts = {}) {
 
   // 7) Tracciato (casing + linea principale) nell'ordine cronologico del viaggio.
   const routePts = route.map((mi) => markerPx[mi]);
-  const routeD = smoothPath(routePts);
+  const routeD = straightPath(routePts);
   const routeStroke = opts.routeStroke ?? "var(--map-route, #2E6F8E)";
   const routeCasing = opts.routeCasing ?? "var(--map-route-casing, rgba(46,111,142,0.22))";
   const routeW = opts.routeWidth ?? "var(--map-line-w, 3.5)";
-  const routeDash = opts.routeDash ?? "var(--map-route-dash, none)";
+  const routeDash = opts.routeDash ?? "var(--map-route-dash, 8 5)";
   const routePath = routeD
     ? `<g class="tm-route">` +
       `<path class="tm-route-casing" style="fill:none;stroke:${routeCasing};stroke-width:calc(${routeW} + 5);stroke-linecap:round;stroke-linejoin:round" d="${routeD}" />` +

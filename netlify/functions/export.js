@@ -6,11 +6,14 @@
 // in contesto locale e Safari bloccava le immagini remote).
 //
 // Endpoint: /.netlify/functions/export
-//   GET ?id=<tripId>  -> HTML dell'itinerario (pubblico, senza autenticazione)
+//   GET ?id=<tripId>                 -> HTML con template "classic" (default)
+//   GET ?id=<tripId>&template=<key>  -> HTML con template specificato
+//
+// Template disponibili: vedi TEMPLATES in src/lib/exportTemplateHtml.js
 
 import { neon } from "@netlify/neon";
 import { buildParts, renderExportTemplate } from "../../src/lib/exportTemplate.js";
-import { EXPORT_TEMPLATE } from "../../src/lib/exportTemplateHtml.js";
+import { TEMPLATES, EXPORT_TEMPLATE } from "../../src/lib/exportTemplateHtml.js";
 
 function json(statusCode, body) {
   return {
@@ -57,6 +60,12 @@ function tripIdFromEvent(event) {
   return "";
 }
 
+function templateFromEvent(event) {
+  const params = event.queryStringParameters || {};
+  const key = (params.template || "classic").trim();
+  return TEMPLATES[key]?.html || EXPORT_TEMPLATE;
+}
+
 // Il template HTML (modificabile) vive in src/lib/exportTemplateHtml.js:
 // è importato come modulo JS perché Netlify (esbuild) impacchetta solo i
 // moduli importati — un file .html letto a runtime non arriverebbe sul server.
@@ -89,8 +98,19 @@ export async function handler(event) {
       days: data.days || {},
       extras: data.extras || [],
       coverImageUrl: data.coverImageUrl || "",
+      // Waves-specific fields (optional, used by waves template)
+      country: data.country || "",
+      continent: data.continent || "",
+      description: data.description || "",
+      difficulty: data.difficulty || "",
+      budget: data.budget || "",
+      bestPeriod: data.bestPeriod || "",
+      transport: data.transport || "",
+      tips: data.tips || "",
+      sourceUrl: data.sourceUrl || "",
     });
-    const html = renderExportTemplate(EXPORT_TEMPLATE, parts);
+    const tpl = templateFromEvent(event);
+    const html = renderExportTemplate(tpl, parts);
     return htmlDoc(200, html);
   } catch (err) {
     console.error(err);

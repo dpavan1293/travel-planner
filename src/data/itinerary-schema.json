@@ -104,13 +104,104 @@
     },
     "extras": {
       "type": "array",
-      "description": "Extra / opzioni aggiuntive",
+      "description": "Extra / opzioni aggiuntive (flight, costs, notes, packing, map, security, vaccines)",
       "items": {
-        "type": "object",
-        "properties": {
-          "label": { "type": "string" },
-          "value": { "type": "string" }
-        }
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["id", "type", "title", "flights"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["flight"] },
+              "title": { "type": "string" },
+              "flights": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["id", "number", "airline", "depTime", "depCity", "arrTime", "arrCity"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "number": { "type": "string" },
+                    "airline": { "type": "string" },
+                    "depTime": { "type": "string" },
+                    "depCity": { "type": "string" },
+                    "arrTime": { "type": "string" },
+                    "arrCity": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["id", "type", "title", "lines"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["costs"] },
+              "title": { "type": "string" },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["desc", "value"],
+                  "properties": {
+                    "desc": { "type": "string" },
+                    "value": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["id", "type", "title", "lines"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["notes", "packing", "security"] },
+              "title": { "type": "string" },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["text", "done"],
+                  "properties": {
+                    "text": { "type": "string" },
+                    "done": { "type": "boolean" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["id", "type", "title", "locations"],
+            "properties": {
+              "id": { "type": "string" },
+              "type": { "type": "string", "enum": ["map"] },
+              "title": { "type": "string" },
+              "locations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "lat", "lon"],
+                  "properties": {
+                    "name": { "type": "string" },
+                    "lat": { "type": "number" },
+                    "lon": { "type": "number" }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       }
     }
   },

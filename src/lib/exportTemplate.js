@@ -67,7 +67,25 @@ const CATEGORY_ICON_SVGS = {
 // Genera le parti dinamiche del documento. Il guscio HTML/CSS resta in
 // src/lib/exportTemplateHtml.js: le parti restituite vengono sostituite ai
 // segnaposto {{...}} dal renderExportTemplate.
-export function buildParts({ tripTitle, days, extras, coverImageUrl, categories = CATEGORIES }) {
+//
+// Parametri waves-specific (opzionali, usati solo dal template waves):
+//   country, continent, description, difficulty, budget, bestPeriod, transport, tips, sourceUrl
+export function buildParts({
+  tripTitle,
+  days,
+  extras,
+  coverImageUrl,
+  categories = CATEGORIES,
+  country = "",
+  continent = "",
+  description = "",
+  difficulty = "",
+  budget = "",
+  bestPeriod = "",
+  transport = "",
+  tips = "",
+  sourceUrl = "",
+}) {
   const sortedDayEntries = Object.entries(days || {}).sort(([a], [b]) => (a < b ? -1 : 1));
 
   let dateRangeLabel = "";
@@ -199,7 +217,7 @@ export function buildParts({ tripTitle, days, extras, coverImageUrl, categories 
   }).join("");
 
   const coverStyle = coverImageUrl
-    ? `background-image: linear-gradient(180deg, rgba(15,26,33,.1) 40%, rgba(15,26,33,.82)), url('${escapeHtml(coverImageUrl)}'); background-size: cover; background-position: center;`
+    ? `background: linear-gradient(180deg, rgba(28,67,63,.15) 0%, rgba(28,67,63,.82) 100%), url('${escapeHtml(coverImageUrl)}') center/cover no-repeat;`
     : `background: linear-gradient(135deg, #1F3A4D 0%, #2E6F8E 100%);`;
 
   // Sezione "Percorso": presente solo quando l'utente ha aggiunto la scheda Mappa.
@@ -217,6 +235,115 @@ export function buildParts({ tripTitle, days, extras, coverImageUrl, categories 
       })()
     : "";
 
+  // Full map section for waves template (wraps SVG + route stops in a section)
+  // Only rendered when a map extra exists AND has at least one valid location.
+  let mapSectionFull = "";
+  if (mapExtra) {
+    const points = routePointsFromList(mapExtra.locations || []);
+    if (points.markers.length > 0) {
+      const svg = buildTravelMapSvg(points, { title: tripTitle || "" });
+      const routeStops = [];
+      sortedDayEntries.forEach(([iso, entry]) => {
+        const place = entry.place;
+        if (place && (routeStops.length === 0 || routeStops[routeStops.length - 1].place !== place)) {
+          routeStops.push({ place, iso });
+        }
+      });
+      const routeHtml = routeStops
+        .map((s) => `<div class="stop"><div class="pt"></div><div class="sidx">${escapeHtml(s.iso)}</div><div class="sname">${escapeHtml(s.place)}</div></div>`)
+        .join("");
+      mapSectionFull = `
+<section id="map">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="label">Itinerario sulla mappa</div>
+      <h2 class="section-title serif">Rotta del viaggio</h2>
+    </div>
+    <div class="map-frame">${svg}</div>
+    <p class="lede" style="text-align:left">Schema indicativo delle tappe, in ordine di visita.</p>
+    <div class="route-line">
+      <div class="route-track">${routeHtml}</div>
+    </div>
+  </div>
+</section>`;
+    }
+  }
+
+  // --- Waves-specific parts ---
+
+  const heroEyebrow = [continent, country].filter(Boolean).join(" · ") || "Itinerario di viaggio";
+
+  const titleParts = (tripTitle || "Il mio viaggio").split("–").map((s) => s.trim());
+  const heroSub = titleParts[1] || "";
+
+  const nDays = sortedDayEntries.length;
+  const heroNavRight = `${nDays} giorni · Itinerario`;
+
+  const overviewTitle = heroSub ? `${titleParts[0]} — ${heroSub}` : tripTitle || "Il mio viaggio";
+
+  const overviewFacts = [
+    ["Durata", `${nDays} giorni`],
+    ["Difficoltà", difficulty],
+    ["Budget", budget],
+    ["Periodo ideale", bestPeriod],
+  ]
+    .filter(([, v]) => v)
+    .map(
+      ([k, v]) =>
+        `<div class="fact"><div class="fkey">${escapeHtml(k)}</div><div class="fval">${escapeHtml(v)}</div></div>`
+    )
+    .join("");
+
+  const overviewTransport = transport
+    ? `<b>Trasporti — </b>${escapeHtml(transport)}`
+    : "";
+
+  const daystrip = sortedDayEntries
+    .map(([iso], i) => {
+      const d = fromISO(iso);
+      const dayName = sortedDayEntries[i][1].place || "";
+      return `<div class="daychip"><div class="dn">${String(i + 1).padStart(2, "0")}</div><div class="dp">${escapeHtml(dayName)}</div></div>`;
+    })
+    .join("");
+
+  // --- Waves extras (costs, checklist, tips) ---
+  const costsBlocks = (extras || []).filter((e) => e.type === "costs");
+  const otherBlocks = (extras || []).filter((e) => e.type !== "costs" && e.type !== "flight" && e.type !== "map");
+
+  const costsHtml = costsBlocks
+    .map((e) => {
+      const rows = (e.lines || [])
+        .filter((l) => (l.desc || "").trim() || (l.value || "").trim())
+        .map(
+          (l) =>
+            `<tr><td class="desc">${escapeHtml(l.desc)}</td><td class="val">${escapeHtml(l.value)}</td></tr>`
+        )
+        .join("");
+      return `<div class="extra-block"><h3 class="extra-title serif">${escapeHtml(e.title || "Costi")}</h3><table class="costs">${rows}</table></div>`;
+    })
+    .join("");
+
+  const checklistHtml = otherBlocks
+    .map((e) => {
+      const items = (e.lines || [])
+        .filter((l) => (l.text || "").trim())
+        .map((l) => `<li><span class="box"></span><span>${escapeHtml(l.text)}</span></li>`)
+        .join("");
+      return `<div class="extra-block"><h3 class="extra-title serif">${escapeHtml(e.title || "Note")}</h3><ul class="checklist">${items}</ul></div>`;
+    })
+    .join("");
+
+  const extrasGrid = `<div class="extras-col">${costsHtml}</div><div class="extras-col">${checklistHtml}</div>`;
+
+  const tipsHtml = tips
+    ? `<b>Da sapere prima di partire — </b>${escapeHtml(tips)}`
+    : "";
+  const tipsStyle = tips ? "" : ' style="display:none"';
+
+  const footerSrc = sourceUrl
+    ? `Fonte itinerario · <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(sourceUrl.replace("https://", ""))}</a>`
+    : "";
+
   return {
     title: tripTitle || "Il mio viaggio",
     coverStyle,
@@ -226,6 +353,20 @@ export function buildParts({ tripTitle, days, extras, coverImageUrl, categories 
     flights: flightCardHtml ? `<div class="info-stack flight-top">${flightCardHtml}</div>` : "",
     days: dayBlocks || '<p class="muted">Nessuna giornata pianificata.</p>',
     extras: infoCards ? `<p class="section-label">Informazioni per il viaggio</p><div class="info-stack">${infoCards}</div>` : "",
+    // Waves-specific
+    heroEyebrow,
+    heroSub,
+    heroNavRight,
+    overviewTitle,
+    overviewDesc: description ? escapeHtml(description) : "",
+    overviewFacts,
+    overviewTransport,
+    daystrip,
+    extrasGrid,
+    tips: tipsHtml,
+    tipsStyle,
+    mapSectionFull,
+    footerSrc,
   };
 }
 
@@ -243,5 +384,19 @@ export function renderExportTemplate(template, parts) {
   html = insert(html, "{{FLIGHTS}}", parts.flights);
   html = insert(html, "{{DAYS}}", parts.days);
   html = insert(html, "{{EXTRAS}}", parts.extras);
+  // Waves-specific tokens
+  if (parts.heroEyebrow !== undefined) html = insert(html, "{{HERO_EYEBROW}}", parts.heroEyebrow);
+  if (parts.heroSub !== undefined) html = insert(html, "{{HERO_SUB}}", parts.heroSub);
+  if (parts.heroNavRight !== undefined) html = insert(html, "{{HERO_NAV_RIGHT}}", parts.heroNavRight);
+  if (parts.overviewTitle !== undefined) html = insert(html, "{{OVERVIEW_TITLE}}", parts.overviewTitle);
+  if (parts.overviewDesc !== undefined) html = insert(html, "{{OVERVIEW_DESC}}", parts.overviewDesc);
+  if (parts.overviewFacts !== undefined) html = insert(html, "{{OVERVIEW_FACTS}}", parts.overviewFacts);
+  if (parts.overviewTransport !== undefined) html = insert(html, "{{OVERVIEW_TRANSPORT}}", parts.overviewTransport);
+  if (parts.daystrip !== undefined) html = insert(html, "{{DAYSTRIP}}", parts.daystrip);
+  if (parts.extrasGrid !== undefined) html = insert(html, "{{WAVES_EXTRAS}}", parts.extrasGrid);
+  if (parts.tips !== undefined) html = insert(html, "{{TIPS}}", parts.tips);
+  if (parts.tipsStyle !== undefined) html = insert(html, "{{TIPS_STYLE}}", parts.tipsStyle);
+  if (parts.mapSectionFull !== undefined) html = insert(html, "{{MAP_SECTION}}", parts.mapSectionFull);
+  if (parts.footerSrc !== undefined) html = insert(html, "{{FOOTER_SRC}}", parts.footerSrc);
   return html;
 }
